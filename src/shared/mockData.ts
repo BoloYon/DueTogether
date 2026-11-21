@@ -1,3 +1,4 @@
+import { recordContributionCredits } from './contributions';
 
 import type { CampusState, CanvasItem, Clock } from './types';
 
@@ -19,8 +20,10 @@ export function makeCampusFixtures(clock: Clock = Date.now): CampusState {
     { id: 'dev', name: 'Dev Rowan', courses: [course, 'PHY 220'] },
     { id: 'noa', name: 'Noa Flint', courses: ['PHY 220'] },
   ];
-  return {
+  return recordContributionCredits({
     currentUser, people,
+    contributionCredits: [],
+    collections: makeSampleCollections(),
     sessions: [
       { id: 'live', title: 'Matrix problem lab', course, hostId: 'mira', attendeeIds: ['mira', 'dev'], startsAt: now - hour / 2, endsAt: now + hour, createdAt: now - 24 * hour, location: 'Juniper Study Loft', capacity: 6 },
       { id: 'upcoming', title: 'Wave diagrams', course: 'PHY 220', hostId: 'noa', attendeeIds: ['noa'], startsAt: now + 2 * hour, endsAt: now + 3 * hour, createdAt: now - hour, format: 'online' },
@@ -47,7 +50,20 @@ export function makeCampusFixtures(clock: Clock = Date.now): CampusState {
     },
     invites: [],
     notifications: [{ id: 'welcome', title: 'Sample workspace', body: 'Explore with fictional classmates.', createdAt: now - hour, read: false, href: '/partners' }],
-  };
+  });
+}
+
+export function makeSampleCollections(): CampusState['collections'] {
+  return [
+    {
+      id: 'sample-matrix-collection', ownerId: 'mira', name: 'Matrix Methods',
+      guides: [{ id: 'sample-matrix-guide', title: 'Row reduction field notes', kind: 'pdf', source: { type: 'sample', key: 'matrix' }, starredBy: [] }],
+    },
+    {
+      id: 'sample-wave-collection', ownerId: 'dev', name: 'Physics Sketchbook',
+      guides: [{ id: 'sample-wave-guide', title: 'Reading wave diagrams', kind: 'pdf', source: { type: 'sample', key: 'wave' }, starredBy: [] }],
+    },
+  ];
 }
 
 export function makeCanvasFixtures(clock: Clock = Date.now): CanvasItem[] {

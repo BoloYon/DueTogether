@@ -4,6 +4,8 @@ import { AppState, Text, View, useColorScheme } from 'react-native';
 
 import { CampusAdapterProvider } from '../../shared/adapters';
 import type { Clock } from '../../shared/types';
+import { removeMedia } from '@/services/profile-media/storage';
+
 import { watchCampusDelivery } from './delivery';
 import { openCampusStore, type CampusStore } from './store';
 
@@ -37,7 +39,7 @@ export function CampusProvider({ children, clock = Date.now }: PropsWithChildren
 
   useEffect(() => {
     let mounted = true;
-    opening.current ??= openCampusStore(AsyncStorage, () => clockRef.current());
+    opening.current ??= openCampusStore(AsyncStorage, () => clockRef.current(), removeMedia);
     void opening.current.then(loaded => {
       if (mounted) setStore(loaded);
     });

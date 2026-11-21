@@ -5,7 +5,7 @@ export type ISODateTime = string;
 export type EpochMillis = number;
 export type Clock = () => EpochMillis;
 
-export interface User { id: Id; name: string; major?: string; year?: string; initials?: string; courses: string[] }
+export interface User { id: Id; name: string; major?: string; year?: string; initials?: string; avatar?: string; banner?: string; bio?: string; courses: string[] }
 export interface Course { id: Id; name: string; code?: string }
 export interface DateRange { start: ISODateTime; end: ISODateTime }
 export interface CanvasItem {
@@ -48,7 +48,19 @@ export interface AvailabilityWindow { date: DayKey; startMinute: number; endMinu
 export interface AvailabilityMatch extends AvailabilityWindow { personId: Id; course: string }
 export interface StudyInvite { id: Id; personId: Id; course: string; startsAt: EpochMillis; endsAt: EpochMillis; location?: string; status: 'pending' | 'accepted'; acceptAt?: EpochMillis; sessionId?: Id }
 export interface Notification { id: Id; title: string; body: string; createdAt: EpochMillis; read: boolean; href?: string }
+export interface StudyGuide {
+  id: Id;
+  title: string;
+  kind: 'pdf' | 'image';
+  source: { type: 'file'; key: string; bytes: number } | { type: 'sample'; key: 'matrix' | 'wave' };
+  starredBy: Id[];
+}
+export interface ProfileCollection { id: Id; ownerId: Id; name: string; cover?: string; guides: StudyGuide[] }
+export type ContributionKind = 'session' | 'post' | 'project';
+export interface ContributionCredit { kind: ContributionKind; itemId: Id; authorId: Id }
 export interface CampusState {
+  collections: ProfileCollection[];
+  contributionCredits: ContributionCredit[];
   currentUser: User;
   people: User[];
   sessions: StudySession[];
@@ -79,7 +91,14 @@ export type CampusAction =
   | { type: 'invite/send'; draft: InviteDraft }
   | { type: 'project/create'; draft: ProjectDraft }
   | { type: 'project/request' | 'project/cancel'; id: Id }
-  | { type: 'profile/update'; profile: Pick<User, 'name' | 'major'> }
+  | { type: 'profile/update'; profile: Pick<User, 'name' | 'major' | 'bio'> }
+  | { type: 'profile/picture'; field: 'avatar' | 'banner'; key?: string }
+  | { type: 'collection/create'; name: string }
+  | { type: 'collection/update'; id: Id; name: string }
+  | { type: 'collection/cover'; id: Id; key?: string }
+  | { type: 'guide/add'; collectionId: Id; guide: Pick<StudyGuide, 'title' | 'kind'> & { source: Extract<StudyGuide['source'], { type: 'file' }> } }
+  | { type: 'guide/star'; collectionId: Id; guideId: Id; starred: boolean }
+  | { type: 'demo/contribute'; kind: ContributionKind; id: Id }
   | { type: 'notification/read'; id: Id }
   | { type: 'notification/readAll' }
   | { type: 'demo/reset' };

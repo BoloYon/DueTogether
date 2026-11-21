@@ -155,6 +155,8 @@ test('normalizes and edits dated availability, then creates one session per simu
   const final = await openCampusStore(storage, () => now);
   final.advance();
   assert.equal(final.getState().sessions.filter(item => item.id === sessionId).length, 1);
+  assert.deepEqual(final.getState().contributionCredits.filter(item => item.itemId === sessionId),
+    [{ kind: 'session', itemId: sessionId, authorId: 'you' }]);
   assert.equal(final.getState().notifications.filter(item => item.id === notice.id).length, 1);
   assert.ok(final.getState().notifications.every(item => item.read));
   now = atMinute(shared.startMinute + 1) + 1;
@@ -222,4 +224,70 @@ test('retries the current snapshot after a failed write', async () => {
   await store.flush();
   const reopened = await openCampusStore(storage, () => start);
   assert.ok(reopened.getState().sessions[0].attendeeIds.includes('you'));
+});
+
+test('upgrades v1 in place and preserves campus records, references and guide stars across launches', async () => {
+  const storage = memoryStorage();
+  const clock = () => start;
+  const { collections: samples, contributionCredits: originalCredits, ...legacy } = makeCampusFixtures(clock);
+  legacy.currentUser.name = 'Existing local name';
+  legacy.savedSessionIds = ['live', 'upcoming'];
+  await storage.setItem(CAMPUS_STORAGE_KEY, JSON.stringify({ version: 1, sequence: 42, state: legacy }));
+
+  const store = await openCampusStore(storage, clock);
+  const { collections, contributionCredits, ...restored } = store.getState();
+  assert.deepEqual(restored, legacy);
+  assert.deepEqual(collections, samples);
+  assert.deepEqual(contributionCredits, originalCredits);
+
+  const cover = 'd173d9e4-c3a5-46cc-a18d-3470f3954141.png';
+  const fileKey = 'd173d9e4-c3a5-46cc-a18d-3470f3954142.pdf';
+  const banner = 'd173d9e4-c3a5-46cc-a18d-3470f3954143.jpg';
+  const collection = store.dispatch({ type: 'collection/create', name: 'Exam Notes' });
+  assert.ok(collection.ok && collection.id === 'campus-43');
+  const { id } = collection;
+  assert.equal(store.dispatch({ type: 'collection/cover', id, key: cover }).ok, true);
+  assert.equal(store.dispatch({ type: 'profile/picture', field: 'banner', key: banner }).ok, true);
+  assert.equal(store.dispatch({ type: 'profile/update', profile: { name: legacy.currentUser.name, bio: '📚' } }).ok, true);
+  const guide = store.dispatch({ type: 'guide/add', collectionId: id, guide: {
+    title: 'Practice.pdf', kind: 'pdf', source: { type: 'file', key: fileKey, bytes: 923 },
+  } });
+  assert.ok(guide.ok && guide.id === 'campus-44');
+  const sample = samples[0];
+  store.dispatch({ type: 'guide/star', collectionId: sample.id, guideId: sample.guides[0].id, starred: true });
+  await store.flush();
+  const reopened = await openCampusStore(storage, clock);
+  assert.deepEqual(reopened.getState(), JSON.parse(JSON.stringify(store.getState())));
+  assert.equal(JSON.parse((await storage.getItem(CAMPUS_STORAGE_KEY))!).version, 2);
+});
+
+test('only removes replaced and reset media after the new snapshot is committed', async () => {
+  const storage = memoryStorage();
+  let fail = false;
+  const removed: string[] = [];
+  const store = await openCampusStore({
+    ...storage,
+    async setItem(key, value) {
+      if (fail) throw new Error('Write failed');
+      await storage.setItem(key, value);
+    },
+  }, () => start, async key => { removed.push(key); });
+  const first = 'd173d9e4-c3a5-46cc-a18d-3470f3954141.png';
+  const second = 'd173d9e4-c3a5-46cc-a18d-3470f3954142.png';
+  store.dispatch({ type: 'profile/picture', field: 'avatar', key: first });
+  await store.flush();
+  fail = true;
+  store.dispatch({ type: 'profile/picture', field: 'avatar', key: second });
+  await store.flush();
+  assert.deepEqual(removed, []);
+  assert.equal((await openCampusStore(storage, () => start)).getState().currentUser.avatar, first);
+  fail = false;
+  store.advance();
+  await store.flush();
+  assert.deepEqual(removed, [first]);
+  assert.equal((await openCampusStore(storage, () => start)).getState().currentUser.avatar, second);
+  store.dispatch({ type: 'demo/reset' });
+  await store.flush();
+  assert.deepEqual(removed, [first, second]);
+  assert.equal((await openCampusStore(storage, () => start)).getState().currentUser.avatar, undefined);
 });
