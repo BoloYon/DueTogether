@@ -30,9 +30,9 @@ export function ProfileCollections({ ownerId }: { ownerId: string }) {
   const [creating, setCreating] = useState(false);
 
   return (
-    <Section title={mine ? 'Your collections' : 'Shared demo collections'} count={collections.length}
+    <Section title={mine ? 'Collections' : 'Shared demo collections'}
       action={mine && !creating ? <Button compact variant="ghost" label="New collection" onPress={() => setCreating(true)} /> : undefined}>
-      <Body secondary>{mine ? 'Keep PDF and image study materials on this device.' : 'Fictional campus materials. Stars are saved on this device.'}</Body>
+      {!mine && <Body small secondary>Stars stay on this device.</Body>}
       {creating && (
         <Card>
           <CollectionNameForm label="Create collection" onCancel={() => setCreating(false)} onSave={name => {
@@ -45,7 +45,7 @@ export function ProfileCollections({ ownerId }: { ownerId: string }) {
           }} />
         </Card>
       )}
-      {!collections.length && <Body secondary>{mine ? 'Create a collection to start adding files.' : 'This classmate has no shared collections.'}</Body>}
+      {!collections.length && <Body secondary>{mine ? 'Create a collection to add study guides.' : 'This classmate has no shared collections.'}</Body>}
       {collections.map(collection => (
         <Card key={collection.id} onPress={() => router.push(routes.collection(collection.id))}
           accessibilityLabel={collection.name} accessibilityHint="Opens collection">

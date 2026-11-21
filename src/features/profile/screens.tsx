@@ -51,27 +51,27 @@ export function ProfileScreen() {
     );
   };
   return (
-    <TabPage title="Profile" contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <TabPage title="Profile" contentContainerStyle={{ padding: 16, gap: 20 }}>
       <ProfileHeader user={user} />
       <Row wrap>{user.courses.map(course => <Badge key={course} label={course} tone="accent" />)}</Row>
       <ProfileCollections ownerId={user.id} />
       <ErrorBanner message={demoError} />
-      <Section title="Going" count={sections.going.length}>
-        <SessionRows sessions={sections.going} empty="Join a session from the Feed to see it here." />
+      <Section title="Going">
+        <SessionRows sessions={sections.going} empty="Join a session from Feed." />
       </Section>
-      <Section title="Hosting" count={sections.hosting.length}
+      <Section title="Hosting"
         action={<Button compact variant="ghost" label="New session" accessibilityLabel="Create a study session" onPress={() => router.push(routes.create({ kind: 'session' }))} />}>
         {sections.hosting.length ? sections.hosting.map(session => (
           <Card key={session.id}>
             <SessionRows sessions={[session]} empty="" />
             {sampleAction('session', session.id)}
           </Card>
-        )) : <Body secondary>Sessions you create appear here.</Body>}
+        )) : <Body secondary>No hosted sessions.</Body>}
       </Section>
-      <Section title="Saved" count={sections.saved.length}>
-        <SessionRows sessions={sections.saved} empty="Save sessions to keep an eye on them without joining." />
+      <Section title="Saved">
+        <SessionRows sessions={sections.saved} empty="No saved sessions." />
       </Section>
-      <Section title="Your posts" count={sections.posts.length}>
+      <Section title="Your posts">
         {sections.posts.length ? sections.posts.map(post => (
           <Card key={post.id}>
             <Badge label={post.course ?? post.topic ?? 'General'} tone="accent" />
@@ -81,21 +81,21 @@ export function ProfileScreen() {
           </Card>
         )) : <Body secondary>No partner posts yet.</Body>}
       </Section>
-      <Section title="Project requests" count={sections.requested.length}>
+      <Section title="Project requests">
         {sections.requested.length ? sections.requested.map(project => (
-          <ListRow key={project.id} title={project.title} subtitle="Requested · waiting for owner"
+          <ListRow key={project.id} title={project.title} subtitle="Waiting for owner"
             trailing={<Badge label="Requested" tone="warning" />}
             onPress={() => router.push(routes.project(project.id))} accessibilityHint="Opens project, where you can cancel" />
         )) : <Body secondary>No pending requests.</Body>}
       </Section>
-      <Section title="Your teams" count={sections.teams.length}>
+      <Section title="Your teams">
         {sections.teams.length ? sections.teams.map(project => (
           <Card key={project.id}>
             <ListRow title={project.title} subtitle={project.ownerId === user.id ? 'Owner' : 'Member'}
               onPress={() => router.push(routes.project(project.id))} accessibilityHint="Opens project" />
             {project.ownerId === user.id && sampleAction('project', project.id)}
           </Card>
-        )) : <Body secondary>You are not on a project team yet.</Body>}
+        )) : <Body secondary>No teams yet.</Body>}
       </Section>
       <ResetDemoData />
     </TabPage>
@@ -118,13 +118,13 @@ function ResetDemoData() {
 
   return (
       <Section title="Demo data">
-        <Body secondary>Reset restores the fictional campus demo and removes your imported files, profile pictures and collections from this device. Your Canvas connection, calendar and appearance are kept.</Body>
+        <Body secondary>Reset restores the fictional campus demo.</Body>
         {resetCount > 0 && <Notice tone="success">Demo data reset.</Notice>}
         <ErrorBanner message={failure} />
         {confirmReset ? (
           <Card>
             <Body bold>Reset all campus demo data?</Body>
-            <Body secondary>This removes everything you created or joined in the demo. It cannot be undone.</Body>
+            <Body secondary>This permanently removes demo activity, imported files, profile pictures, and collections. Canvas, calendar, and appearance settings are kept.</Body>
             <Row>
               <Button flex variant="secondary" label="Keep data" onPress={() => setConfirmReset(false)} />
               <Button flex variant="danger" label="Reset" accessibilityLabel="Confirm reset demo data" onPress={reset} />

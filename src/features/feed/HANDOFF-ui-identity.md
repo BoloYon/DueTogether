@@ -26,3 +26,9 @@ The bundled Bull U is the original 165 × 218 PNG with a white background. It ha
 The follow-up builds on `312ca3c`, the experiment commit included in main at `a392384`. The viewport backdrop uses a 48-point grid and a fixed tile of square, four-point, and stepped stars. Dark appearance uses the reference base `#0B0911` and a deep purple grid. Light appearance pairs the existing pale shell with a subdued grid and muted stars. The same decoration covers tab, detail, and settings screens. Navigation chrome, cards, and controls retain their surface colors where they need a solid fill. The graph files and their artwork are identical to the prior commit.
 
 The SVG layer sits behind scrollable content and stays out of hit testing and the accessibility tree. It uses the existing appearance context and React-generated IDs for deterministic server and client markup. The narrow Chromium checks cover all 19 tab and detail/settings routes, the appearance control, and entry to Graph View. Native rendering was outside the follow-up QA pass. The follow-up used a separate Expo preview on port 8138.
+
+## Minimalism follow-up
+
+The follow-up builds on `1e339c8`, included in main at `d316de1`. It shortens repeated demo and Canvas copy, removes duplicate labels and counts, uses project titles as the start of each card, and shows a profile banner only when one exists. Feed retains the List, Graph, and Social controls and its USF logo. The graph details prompt is shorter and the artwork uses the existing code. Destructive reset details remain in the confirmation. Routes, actions, touch targets, and the pixel sky are carried forward.
+
+The separate Chromium preview used port 8139. Expo's existing unstable native tabs deprecation, terminal color warning, and intermittent development-server request abort messages were observed. Lint, typecheck, and all 72 tests passed. Native rendering was outside this follow-up QA pass.

@@ -25,15 +25,16 @@ export function PartnersScreen() {
   const posts = searchPartners(state, '').posts;
   const pendingInvites = state.invites.filter(invite => invite.status === 'pending').length;
   return (
-    <TabPage title="Partners" contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <TabPage title="Partners" contentContainerStyle={{ padding: 16, gap: 20 }}>
+      <Body small secondary>Campus demo · Fictional classmates</Body>
       <Row wrap>
-        <Button label="Find a Study Match" onPress={() => router.push(routes.partnerFind)} />
+        <Button label="Find a study match" onPress={() => router.push(routes.partnerFind)} />
         <Button label={pendingInvites ? `Invites (${pendingInvites})` : 'Invites'} variant="secondary"
           accessibilityLabel={pendingInvites ? `Study invites, ${pendingInvites} pending` : 'Study invites'}
           onPress={() => router.push(routes.partnerInvite)} />
       </Row>
 
-      <Section title="Messages" count={summaries.length}>
+      <Section title="Messages">
         {summaries.length ? summaries.map(({ thread, person, last, unread }) => (
           <ListRow
             key={thread.id}
@@ -49,16 +50,15 @@ export function PartnersScreen() {
         )) : <EmptyState title="No conversations yet" body="Connect on a partner post below to start a chat." />}
       </Section>
 
-      <Section title="Partners wanted" count={posts.length}
+      <Section title="Partners wanted"
         action={<Button compact variant="ghost" label="New post" accessibilityLabel="Create a partner post" onPress={() => router.push(routes.create({ kind: 'partner' }))} />}>
         {posts.length ? posts.map(post => <PostCard key={post.id} post={post} />)
-          : <EmptyState title="No partner posts" body="Be the first to post what you want to study." />}
+          : <EmptyState title="No partner posts" body="Use New post to find a partner." />}
       </Section>
 
-      <Section title="Classmates" count={state.people.length}>
+      <Section title="Classmates">
         {state.people.map(person => <PersonRow key={person.id} person={person} />)}
       </Section>
-      <Notice tone="neutral">Fictional classmates for the demo. Nothing leaves this device.</Notice>
     </TabPage>
   );
 }
@@ -94,7 +94,7 @@ export function PersonScreen({ id }: DetailParams) {
       <Row wrap>{person.courses.map(course => <Badge key={course} label={course} tone={shared.includes(normalizeCourse(course)) ? 'accent' : 'neutral'} />)}</Row>
       {thread
         ? <Button label="Message" onPress={() => router.push(routes.chat(thread.id))} accessibilityLabel={`Message ${person.name}`} />
-        : <Notice tone="accent">Connect on one of {person.name.split(' ')[0]}’s posts to start a conversation.</Notice>}
+        : <Notice tone="accent">Connect on a post to start a conversation.</Notice>}
 
       <ProfileCollections ownerId={person.id} />
 
@@ -137,14 +137,14 @@ export function InviteScreen() {
         {invites.length ? invites.map(invite => <InviteRow key={invite.id} invite={invite} />)
           : <Body secondary>No invites yet. Send one from a match below.</Body>}
       </Section>
-      <Section title="Suggested from shared free time" count={matches.length}>
+      <Section title="Availability matches" count={matches.length}>
         <TextField label="Meeting place (optional)" value={location} onChangeText={setLocation} placeholder="e.g. Library, room 2" maxLength={80}
           hint="Applied to the next invite you send" />
         {matches.length ? matches.map(match => <MatchCard key={`${match.personId}-${match.course}-${match.date}-${match.startMinute}`} match={match} location={location} />)
           : <EmptyState title="No overlapping free time" body="Add your availability to see classmates you can invite."
             action={<Button label="Add availability" variant="secondary" onPress={() => router.push(routes.partnerAvailability)} />} />}
       </Section>
-      <Notice tone="neutral">Acceptance is simulated for the demo and creates one study session with both of you, plus a notification.</Notice>
+      <Notice tone="neutral">In this demo, a simulated acceptance creates a study session and sends a notification.</Notice>
     </Screen>
   );
 }

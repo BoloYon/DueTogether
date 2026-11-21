@@ -81,7 +81,7 @@ export function ChatScreen({ id }: DetailParams) {
               </Row>
             </View>
           )}
-          <Notice tone="neutral">Sample conversation with a fictional classmate. Replies are simulated on this device.</Notice>
+          <Notice tone="neutral">Campus demo · Simulated replies</Notice>
 
           {thread.messages.map((message, index) => {
             const day = dayKeyOf(message.sentAt);

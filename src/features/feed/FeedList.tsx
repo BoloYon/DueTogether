@@ -30,20 +30,20 @@ export function FeedList({ sections, actions, now, calendar, overrides, onToggle
         <FeaturedLiveSession session={sections.happeningNow[0]} actions={actions} now={now} />
         {sections.happeningNow.slice(1).map(session => <SessionRow key={session.id} session={session} actions={actions} now={now} live />)}
       </>
-      : <EmptyState title="No live sessions right now" body="Check Coming Up, or start one yourself from Create." action={<Button compact label="Create a session" onPress={() => router.push(routes.create({ kind: 'session' }))} />} />,
+      : <EmptyState title="No live sessions" action={<Button compact label="Create a session" onPress={() => router.push(routes.create({ kind: 'session' }))} />} />,
     dueSoon: sections.dueSoon.length
       ? <>{sections.dueSoon.map(item => <CanvasItemRow key={item.id} item={item} now={now} showDay sample={sample} />)}</>
       : <EmptyState title="Nothing due in the next 7 days"
-        body={calendar.mode === 'live' ? 'Your synced Canvas coursework has no deadlines this week.' : 'Connect Canvas in Calendar settings to see your own deadlines.'} />,
+        body={sample ? 'Connect Canvas in Calendar settings for your own deadlines.' : undefined} />,
     comingUp: sections.comingUp.length
       ? <>{sections.comingUp.map(session => <SessionRow key={session.id} session={session} actions={actions} now={now} live={false} />)}</>
-      : <EmptyState title="No upcoming sessions" body="Create a session and classmates will see it here." />,
+      : <EmptyState title="No upcoming sessions" body="Use Create to start one." />,
     partnersWanted: sections.partnersWanted.length
       ? <>{sections.partnersWanted.map(post => <PartnerPostRow key={post.id} post={post} actions={actions} now={now} />)}</>
-      : <EmptyState title="No partner posts yet" body="Post what you’re looking for from Create." />,
+      : <EmptyState title="No partner posts" body="Use Create to post what you’re studying." />,
     newProjects: sections.newProjects.length
       ? <>{sections.newProjects.map(project => <ProjectRow key={project.id} project={project} actions={actions} now={now} />)}</>
-      : <EmptyState title="No projects yet" body="Pitch a project from Create to find teammates." />,
+      : <EmptyState title="No projects yet" body="Use Create to pitch a project." />,
   };
 
   return <View style={styles.list}>
@@ -53,7 +53,7 @@ export function FeedList({ sections, actions, now, calendar, overrides, onToggle
       return <View key={key} style={styles.section}>
         <View style={styles.headerRow}>
           <SectionHeader title={SECTION_TITLES[key]} count={count} expanded={expanded} onPress={() => onToggle(key, !expanded)}
-            badge={key === 'dueSoon' && sample ? <Tag label="Sample" tone="warning" /> : key === 'happeningNow' && count ? <Tag label="LIVE" tone="live" icon="live" /> : undefined} />
+            badge={key === 'dueSoon' && sample ? <Tag label="Sample" tone="warning" /> : undefined} />
           {key === 'dueSoon' && <Button compact tone="plain" label="See all" accessibilityLabel="See all coursework in Calendar" onPress={() => router.push(routes.calendar)} />}
         </View>
         {expanded && <Reveal reducedMotion={reducedMotion} animate={overrides[key] !== undefined} style={styles.body}>{bodies[key]}</Reveal>}
@@ -74,7 +74,7 @@ function SectionHeader({ title, count, expanded, onPress, badge }: { title: stri
 }
 
 const styles = StyleSheet.create({
-  list: { gap: 4 },
+  list: { gap: 10 },
   section: { gap: 2 },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
   badge: { alignSelf: 'center' },

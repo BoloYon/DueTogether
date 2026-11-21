@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
 import {
-  Avatar, Badge, Body, Button, Card, EmptyState, ErrorBanner, ListRow, Notice, Row, Screen, Section, Title, useNow,
+  Avatar, Badge, Body, Button, Card, EmptyState, ErrorBanner, ListRow, Notice, Row, Screen, Section, useNow,
 } from '@/components/campus';
 import { useCampus } from '@/shared/adapters';
 import { routes, type DetailParams } from '@/shared/navigation';
@@ -21,7 +21,7 @@ export function SessionScreen({ id }: DetailParams) {
       <Screen title="Session">
         <EmptyState
           title="Session unavailable"
-          body="It may have been removed or the demo data was reset. Browse other sessions from the Feed."
+          body="Find another session in Feed."
           action={<Button label="Go to Feed" variant="secondary" onPress={() => router.navigate(routes.feed)} />}
         />
       </Screen>
@@ -47,9 +47,7 @@ export function SessionScreen({ id }: DetailParams) {
         {view.hosting && <Badge label="Hosting" tone="success" />}
         {view.joined && !view.hosting && <Badge label="Going" tone="success" />}
         {view.full && <Badge label="Full" tone="warning" />}
-        {view.saved && <Badge label="Saved" />}
       </Row>
-      <Title>{session.title}</Title>
       <Body secondary>{view.subject}</Body>
 
       <Card>

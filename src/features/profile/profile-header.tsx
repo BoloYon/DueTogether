@@ -19,9 +19,9 @@ export function ProfileHeader({ user, dashed, children }: { user: User; dashed?:
 
   return (
     <View style={{ gap: 12 }}>
-      <View style={{ height: 110, borderRadius: 18, overflow: 'hidden', backgroundColor: palette.accentSoft }}>
-        {banner?.uri && <Image source={banner.uri} contentFit="cover" style={{ flex: 1 }} accessible accessibilityLabel="Profile banner" />}
-      </View>
+      {banner?.uri && <View style={{ height: 110, borderRadius: 18, overflow: 'hidden', backgroundColor: palette.accentSoft }}>
+        <Image source={banner.uri} contentFit="cover" style={{ flex: 1 }} accessible accessibilityLabel="Profile banner" />
+      </View>}
       <Row>
         {avatar?.uri
           ? <Image source={avatar.uri} contentFit="cover" style={{ width: 64, height: 64, borderRadius: 32 }} />
