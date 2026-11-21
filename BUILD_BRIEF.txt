@@ -1,0 +1,534 @@
+DUE TOGETHER
+Get it done. Go have fun.
+
+SELF-CONTAINED BUILD BRIEF FOR THE HUMAN INTEGRATOR AND FOUR AGENT LANES
+
+Paste the coordinator prompt into the setup agent. After the humans approve
+and publish the baseline, put this entire file in the shared repository as
+BUILD_BRIEF.txt and paste only the relevant launch prompt into each Pane.
+Every lane must be able to work from committed files without a conversation
+with another lane. The humans own integration and the final submission.
+
+=================== COORDINATOR PROMPT ===================
+
+You are the setup coordinator for DueTogether, a Florida Polytechnic student
+app. An Expo app is already scaffolded in the current folder. Preserve that
+scaffold, the installed Expo SDK, and the package manager already in use.
+Do not generate another app inside it. Your job is to prepare shared
+interfaces, fixtures and workflow before four agents implement features.
+
+1. Inspect git status, git remote -v, the lockfile, package.json, Expo config,
+   TypeScript config, and the current route entry point. If there is no Git
+   repository, initialize one with main as the initial branch. If there is
+   no remote, stop and ask for the GitHub URL before doing setup work.
+   Do not overwrite existing human changes. If an existing AGENTS.md has a
+   managed Pane block, preserve it exactly and add project instructions
+   outside that block. Do not set global Git options or change credentials.
+2. Ignore .env and .env.* while explicitly allowing .env.example. Protect
+   local secret files. Add a .gitattributes rule '* text=auto eol=lf' if no
+   equivalent rule exists. Do not renormalize unrelated tracked files.
+3. Install Expo-SDK-compatible expo-secure-store and react-native-svg with
+   npx expo install if missing. Reuse AsyncStorage, Expo Router, the test
+   runner and gesture packages if present. If needed, install supported
+   AsyncStorage, Gesture Handler, and Expo Router prerequisites at setup
+   time. Use the scaffold's package manager and maintain one lockfile.
+   Configure any Expo Router entry and plugin requirements needed by the
+   selected packages. Confirm Expo Go compatibility. Do not pin arbitrary
+   versions or let lanes add dependencies independently. Record the exact
+   baseline commands and any remaining device verification in the README.
+4. Create and populate the shared files specified below. Establish the route
+   tree and a root that uses the shared adapters with working fallback
+   fixtures. Root routes are thin and delegate to feature screen exports.
+   Set up shared TypeScript paths and test commands where feasible. Define
+   all public interfaces, route parameter names, and export signatures up
+   front. Compile-check the baseline. If you encounter a real incompatibility,
+   document the resolution in PLAN.md before releasing the baseline.
+5. Create PLAN.md with the exact ownership table, dependencies, lane acceptance
+   checks, baseline SHA field, and integration order below. Put the full
+   standalone specification in BUILD_BRIEF.txt. Create AGENTS.md with the
+   operating rules, plus CLAUDE.md containing only @AGENTS.md. Add AI_USAGE.md
+   with Tools, Log, and What we did ourselves sections. Add a setup log entry
+   for the tool that actually performed setup. Add an AI_USAGE.d directory
+   for independently owned lane entries. Add README.md with the app summary,
+   getting-started instructions, demo modes, and connection steps.
+6. Run npx tsc --noEmit before handoff. Run lint and tests if configured.
+   Present PLAN.md and src/shared/types.ts for human review along with the
+   dependency/config diff. STOP before any commit, push, Pane launch, or
+   integration. After explicit human approval, the coordinator may commit
+   the approved baseline as “scaffold + agent setup” and push it to main.
+   This is the only automated push authorized by this prompt. If branch
+   protection or remote permissions prevent it, report the blocker.
+
+=================== PRODUCT SPECIFICATION ===================
+
+DueTogether gives Florida Polytechnic students a place to find classmates,
+study sessions, and project teammates, plus a private view of their own
+Canvas coursework. Work and Social are distinct areas. The demo focuses
+on Work, with a clearly labeled Social preview. Do not imply that the
+Social preview provides a campus network unless that service exists.
+
+Core demo: open Work Feed, discover a live study session and join, find a
+classmate with overlapping free time, open a conversation, and ask to join
+a project. Connect a Canvas account if available, show the calendar, and
+turn an upcoming exam or quiz into a prefilled study-session draft.
+
+The campus data layer is local. Sessions, posts, messages, invites, and
+project requests persist on that device. There is no campus authentication,
+remote database, push notification service, or cross-device messaging in
+scope. Show simulated chat replies and invite acceptance for the demo using
+clear language. Canvas REST reads may be real. Fixtures must work with no
+token or network. Use fictional people, locations, and coursework in
+fixtures. Record truthfully what is live, simulated, pre-existing, and
+built during the event. Do not imply code was built during the event if it
+was brought in earlier. The humans confirm the event's reuse and AI rules.
+
+NAVIGATION AND SHARED VISUAL LANGUAGE
+
+- Main tabs in this order: Feed, Partners, Projects, Calendar, Profile.
+- Root routes or nested equivalents: /create, /session/[id],
+  /person/[id], /chat/[id], /project/[id], /calendar/settings,
+  /partners/find, /partners/availability, /partners/invite,
+  /notifications, /profile/settings. Publish the exact paths in PLAN.md.
+- /create accepts optional course and title and can select session, partner
+  post, or project creation. A Canvas study action defaults to session.
+  Preserve normal creation without these parameters.
+- Use small reusable components, polished mobile spacing, light and dark
+  themes, high contrast, readable labels, and safe-area-aware layouts.
+  A restrained iOS-inspired design is fine. Use system body typography.
+  Serif display headings are optional if already available offline. Keep
+  the app usable on small phones and with larger device text.
+- Minimum 44 point hit areas for primary controls. Give icon-only controls
+  accessible names and expose selected, expanded, and disabled states.
+  Empty, loading, offline and error states must explain what the user can
+  do. Keep animations short, subtle, and compatible with reduced motion.
+  Use a 6–10 px slide with a short fade where useful, about 150–200 ms.
+  Avoid spring overshoot and large movements on open, close, or tab switch.
+
+WORK FEED
+
+- Keep Social / Work as a prominent filled switch. Default to Work. Social
+  is a clearly labeled preview with light sample campus hangout content
+  or a simple coming-soon state. Match the app's social-and-work identity.
+- In Work, use a quieter compact List View / Graph View toggle. Default
+  to List View. Remove the old category chips if present in the scaffold.
+- Both views use these sections in this exact order:
+  Happening Now, Due Soon, Coming Up, Partners Wanted, New Projects.
+- List View has collapsible headers with chevrons and expanded state.
+  Populated sections start open, and toggles are independent. Keep
+  headings reachable even if empty. Keep Due Soon's See all navigation
+  separate from the accordion target.
+- Graph View uses a horizontal text-tab row with an underline for the
+  selected section. No graph accordion. One graph visible at a time,
+  initially Happening Now or the first populated section. Bring the active
+  tab into view. The underline tabs must look different from both switches.
+- Happening Now: all live study sessions/events represented in the campus
+  model, based on startsAt <= now < endsAt. Feature the live session with
+  the largest attendance, then list other live sessions. Show time left,
+  location or online format, and attendance. Refresh time-based grouping
+  while the Feed is open. Ended sessions leave both live and upcoming.
+- Coming Up: future sessions, soonest first. A session must never appear in
+  both sections. Open a session to see its host, attendees, capacity, and
+  location. Join/leave, save/unsave, full, ended, and hosting states belong
+  to one shared rules layer.
+- Due Soon: next three upcoming dated assignments, quizzes, or exams within
+  seven days in the list. See all goes to Calendar. Graph has Today,
+  Tomorrow, Next 7 days filters. The graph may show more than the preview
+  three. Use local calendar boundaries for Today and Tomorrow. Only the
+  connected student's coursework is visible. A mock fallback must be
+  labeled and must never masquerade as the connected student's calendar.
+- Partners Wanted: recent partner posts by other students, newest first.
+  Show course/topic, goals, and author. Connect opens or reuses a chat.
+- New Projects: newest first. Show owner, roles, team size, pitch, and
+  capacity. Ask to join and cancel a request from the actual shared state.
+
+COURSE GALAXY GRAPH
+
+- Derive nodes and links from the same records the list uses. No copied
+  mock graph roster when real app state is available. Use stable IDs and
+  one node per person, even if they connect several clusters.
+- Silhouettes: large course/topic planet with a short code and name, small
+  student moon with initials/name, rounded diamond for a session, circle
+  with type icon for a Canvas item, capsule for a partner post, and rounded
+  hexagon for a project. Make session diamonds visibly bigger than ordinary
+  circular item and student nodes. Course planets may be larger anchors.
+- Live diamonds have a readable red live indicator and attendee count.
+  Upcoming diamonds have a date and no live indicator. Canvas urgency is
+  a separate Today/Tomorrow/weekday label. More urgent items sit closer to
+  their planet. Show a compact legend specific to the active graph.
+- Relationships: item-to-planet, attendee-to-session, author-to-post,
+  owner/team-member-to-project. In Partners Wanted and New Projects, show
+  a distinctive solid line from You to known contacts. New-to-you people
+  get a dashed outline and explicit label, without a line to You. Use real
+  thread/connection state. Show pending only where the state truly supports
+  it. A project request never makes someone a personal connection.
+- Native renderer with react-native-svg. Prefer a small deterministic
+  layout using anchored planets, springs, repulsion, label-aware collision,
+  damping, and bounded positions. Place multi-course people near the
+  relevant clusters. Account for diamond corners and labels in collision
+  spacing and touch bounds. Avoid adding an unapproved dependency.
+- Save selection and viewport per section while switching tabs. Preserve
+  positions for unchanged IDs when an item or connection changes. Stop
+  the force loop when settled, unfocused, or unmounted. Reduced motion
+  settles immediately. Do not simulate hidden graphs.
+- Tap to select, drag after a small movement threshold, pan, pinch zoom,
+  and Fit View. Select highlights direct neighbors and dims other nodes.
+  Make graph gestures cooperate with vertical Feed scrolling. Keep the
+  graph a little shorter on phones so the content below can peek into view.
+  Fit the graph to the measured stage, including outer labels.
+- Put selected details below the graph on phones. Add an accessible node
+  list or equivalent selection path. Put Join, Open in Canvas, Message,
+  Connect and Ask to join in the details. A tap or drag on the graph must
+  never dispatch those actions. A selection can open the appropriate detail
+  route if needed. Reuse the normal app action and check the UI updates
+  across both views.
+
+PARTNERS, SESSIONS, CHAT, AND PROJECTS
+
+- Partner search by course/topic and person. Display existing conversations
+  in a Messages section. Profile links resolve by person ID.
+- Connect carries the partner post ID. Find its author. If this is the
+  first contact, create one thread for that person with an intro message.
+  If there's already a thread, attach the new post as context and reuse
+  it. The same post twice is a no-op. Expose multiple course/post contexts
+  in the conversation. A connection belongs to the shared campus state.
+- Chat has incoming/outgoing bubbles, course context if applicable,
+  composer validation, timestamps, and a typing indicator for a simulated
+  reply. Store queued reply text and due time centrally, not in the chat
+  screen. Rehydrate it after relaunch and deliver once. Derive unread
+  indicators from thread state. Keep simulations deterministic under test.
+- Availability uses dated local windows with start/end minutes. Reject
+  invalid or expired input, support edit/remove, normalize course codes,
+  intersect windows on the same date, trim past portions, and sort matches
+  by earliest remaining shared time. An invite has pending/accepted state.
+  Simulated acceptance creates exactly one session with both attendees and
+  a local notification. Use stable IDs and injectable clocks for tests.
+- Session creation supports course or personal topic, start, duration,
+  location/online format, capacity, and description. Validate before
+  creating. Joining is idempotent and respects capacity and end time.
+  Saving a session is independent from joining. Use immediate shared state
+  updates so the Feed and detail page agree.
+- Project list and detail show pitch, open roles, owner/team and occupancy.
+  Support course or personal category. Project creation validates title,
+  pitch, roles, and size. Ask to join marks Requested and offers cancel.
+  It does not add a team member. Owners and existing members get the
+  appropriate status; full teams cannot receive another local request.
+- Profile shows editable name/major and sections for going/saved sessions,
+  posts, and project requests. Reset demo data asks for confirmation and
+  affects campus data only. Notifications support unread, mark read, mark
+  all read, and opening the relevant route.
+
+CANVAS AND CALENDAR
+
+- Calendar Settings owns connection controls. Collect school Canvas base
+  URL and a masked personal access token for the account holder's demo.
+  Read CANVAS_BASE_URL from shared non-secret config as an optional default.
+  Keep a placeholder empty until a verified school host is supplied.
+  Validate HTTPS origin and reject credentials in the URL and non-HTTPS
+  schemes. Make the destination clear before handing it a token.
+- The demo's native app calls Canvas directly over HTTPS and uses a
+  personal access token for the participant's own account. No public PAT
+  onboarding and no OAuth implementation. Define a credential interface
+  so a real authorization flow can be added later. Token instructions refer
+  to Canvas Account > Settings > Approved Integrations > New Access Token
+  where available. Never ask other students to hand over their tokens.
+- Use GET only and Authorization: Bearer <token>. Verify the account with
+  users/self, read active courses for names and codes, then read
+  /api/v1/planner/items with explicit start_date and end_date. Default to
+  120 days back and 180 days ahead. Follow Link rel=next only on the
+  configured origin, reject redirects or otherwise prevent credentials
+  crossing origins, handle cancellation, bound timeouts and paginate.
+  Treat auth/rate/network/timeout failures distinctly. No token in logs,
+  URLs, crash messages, fixtures, AsyncStorage, commits, or screenshots.
+- A2 owns translation. Use course IDs to attach the name (nickname when
+  returned) and code. Map the planner's actual plannable_type and supplied
+  assignment/quiz metadata before falling back to title clues. Identify
+  exams, quizzes, homework and dated calendar events where supported.
+  Keep exact due/start/end timestamps, preserve all-day date strings, and
+  skip records with no usable date. Preserve the specific Canvas item URL
+  if safe and present. Stable IDs should include record kind and Canvas
+  identifier; handle the same item on multiple pages and student-specific
+  date overrides where identifiable. Never deduplicate by title alone.
+- A valid new connection loads identity and an initial snapshot before it
+  replaces any working connection. Store native tokens in SecureStore and
+  store only non-secret settings plus coursework in AsyncStorage. Validate
+  the cached snapshot account key (school origin + Canvas account ID).
+  Cache scope and disconnect must prevent prior account data leaking into a
+  replacement connection, even when a previous request finishes late.
+- One calendar provider/adapter. Sync on initial load and foreground when
+  stale (use five minutes as the default), coalesce concurrent refreshes,
+  and support pull-to-refresh, Sync now, Last synced, Retry and Disconnect.
+  Successful snapshots replace records within their query window and keep
+  history outside it for the same account. A failure preserves the last
+  good snapshot. Disconnect clears credentials and private cached items.
+  When disconnected, offer a labeled sample calendar for a no-network demo.
+- Calendar tab defaults to List and remembers the choice. List splits
+  Upcoming/Past and groups by date. Past depends on the deadline or event
+  end, not completion. Calendar view shows an actual month grid, weekday
+  headers, previous/next buttons, Today, selected day, and item markers.
+  Show selected-day rows below. Exams & quizzes filters both views.
+  View/range navigation uses the cache and does not initiate a sync.
+- Rows show title, class, date/time, and type. Optional LockDown tag comes
+  from a recognized Respondus note, which can be removed from display title.
+  Open in Canvas goes to the exact item URL if present. Study for this on
+  exams and quizzes opens a prefilled session draft. Grades, submissions,
+  and modifying Canvas coursework are outside scope.
+
+=================== SHARED CONTRACT AND BASELINE ===================
+
+Use one central src/shared directory. Types below specify the minimum public
+contract. The coordinator may adjust naming once before the lanes launch,
+then document the exact signatures in PLAN.md. Use strict TypeScript.
+Date-time strings from Canvas remain ISO strings. Campus instant times
+are numeric epoch milliseconds. Calendar day keys are YYYY-MM-DD strings.
+All IDs are strings. Never use display names as identity.
+
+  User { id, name, major?, year?, initials?, courses: string[] }
+  Course { id, name, code? }
+  CanvasItem {
+    id, canvasId, courseId?, courseName, courseCode?, title,
+    kind: 'homework' | 'quiz' | 'exam' | 'event',
+    dueDate?, startsAt?, endsAt?, allDayDate?, htmlUrl?, lockdown?
+  }
+  CanvasSnapshot {
+    accountKey, range: { start, end }, items: CanvasItem[], fetchedAt
+  }
+  StudySession {
+    id, title, course?, topic?, hostId, attendeeIds: string[],
+    startsAt, endsAt, createdAt, capacity?, location?, format?, description?
+  }
+  PartnerPost { id, authorId, course?, topic?, title, description, createdAt }
+  Project {
+    id, title, pitch, ownerId, teamIds: string[], openRoles: string[],
+    capacity, course?, category?, createdAt
+  }
+  Membership { userId, projectId, status: 'requested' | 'member' }
+  Thread { id, personId, postIds: string[], messages: Message[], readAt?,
+    pendingReply?: { id, text, dueAt, course? } }
+  Message { id, authorId, text, sentAt, course? }
+  AvailabilityWindow { date, startMinute, endMinute }
+  StudyInvite { id, personId, course, startsAt, endsAt, location?,
+    status: 'pending' | 'accepted', acceptAt?, sessionId? }
+  Notification { id, title, body, createdAt, read, href? }
+
+Baseline files and module boundaries:
+- src/shared/types.ts: all public entities, domain state and action types,
+  raw Canvas transport shapes, connection results, and date range types.
+- src/shared/config.ts: public defaults only, including CANVAS_BASE_URL,
+  calendar sync window and refresh interval. No personal token.
+- src/shared/mockData.ts: typed, deterministic campus fixtures using an
+  injectable clock. Include connected and unfamiliar students, live/
+  upcoming/ended/full sessions, multiple posts by one author, overlapping
+  schedules, projects with mixed teams, and sample Canvas rows across a
+  week. Existing deadline examples should remain useful on any demo date.
+- src/shared/adapters.tsx: coordinator-owned adapter facade and reference
+  mock implementations. Stable useCampus() and useCalendar() signatures
+  let frontend lanes work immediately. Supply a typed testable provider
+  injection seam so integration swaps providers without rewriting screens.
+- src/shared/navigation.ts: stable route helpers or parameter types.
+- Declare each lane module entry point and output shape in PLAN.md. Root
+  integration is intentionally coordinator-owned. Lane code may exercise
+  its own screens via unit/flow tests with injected adapters or a local
+  harness inside its owned folder. Shared staging files are read-only.
+
+Adapter contracts to freeze:
+- useCampus(): current state and typed dispatch. State contains current
+  user, people, sessions, saved session IDs, posts, post-to-thread map,
+  threads, projects, memberships, availability, invites, notifications.
+  Expose named commands/actions for each mutation in the product spec.
+- useCalendar(): status, connection/account metadata excluding token,
+  items, sample/live mode, lastSyncedAt, error, and commands connect,
+  sync, disconnect, and enterSampleMode if supported. Keep raw tokens out
+  of adapter state and out of React component props except transient form
+  input passed to the connect command.
+- Raw Canvas transport: getSelf, listCourses, listPlannerItems, plus a
+  composed read function that returns account, courses and planner records.
+  A2 injects a transport matching the contract; A1 implements it. Publish
+  error codes, cancellation semantics, fixtures, inputs and outputs up front.
+- Pure selectors: derive Feed sections, session state, due ranges, lookup
+  thread by person, and find availability overlaps from passed state and
+  now. Keep side effects out of selectors and state transition functions.
+
+=================== PLAN.MD OWNERSHIP ===================
+
+Each owns only its paths below and the colocated tests under those paths.
+Include a lane-owned HANDOFF.md in each lane's primary owned directory.
+The coordinator creates empty directories with placeholders if helpful.
+One lane's files must compile against baseline contracts without importing
+another lane's unmerged implementation. The coordinator wires adapters and
+routes during integration. Reuse baseline modules and scaffold primitives.
+No duplicate shadow stores within feature screens.
+
+A1 | Matheus | Claude Code | FRONTEND
+Owns: src/features/feed/, src/features/graph/, src/features/calendar/,
+      src/features/onboarding/, AI_USAGE.d/A1.md.
+Task: Implement Work/Social Feed, List/Graph, five sections, Course Galaxy
+      layout and gestures, Calendar list/month grid and settings entry,
+      connection form, sync/error/empty UI, Canvas row actions. Use shared
+      adapters and navigation helpers. Consume action and status contracts
+      rather than implementing network or persistence in UI.
+Done: List/Graph show same source data; correct section order and grouping;
+      graph diamonds readable and stage compact; accessibility and reduced
+      motion; calendar settings and both views follow adapter state; quiz
+      action yields the agreed draft params. Verify phone gestures when
+      available and write exact steps if device QA remains pending.
+
+A2 | Matheus | Codex | BACKEND / CANVAS DATA
+Owns: src/services/canvas/, src/services/calendar/, AI_USAGE.d/A2.md.
+Task: Canvas GET transport, validation, pagination and planner mapping;
+      SecureStore adapter, private calendar cache and snapshot merging;
+      clock/cancellation/retry logic and calendar provider adapter.
+      Supply fixtures and mocked tests. Integrate with baseline interfaces
+      only. Secret endpoints, tokens, and sign-in remain the human's.
+Done: fixture covers pagination, foreign-origin next link, auth failure,
+      all-day and due times, stable-ID reschedule, token replacement and
+      late response after disconnect. Failed refresh keeps data. Export a
+      provider compatible with the shared adapter contract.
+
+B1 | Mattias | Claude Code | FRONTEND
+Owns: src/features/sessions/, src/features/partners/, src/features/chat/,
+      src/features/projects/, src/features/profile/, src/features/notifications/,
+      src/features/create/, src/components/, AI_USAGE.d/B1.md.
+Task: Build campus screens, compose/post flows, session detail, partner
+      finder and availability, chat, project list/detail, profile, and
+      notifications from mock-backed adapters. Restore the normal route
+      behaviors after integration. Reuse scaffold primitives. Coordinate
+      shared visual style through frozen tokens/spec, not sibling imports.
+Done: joining/saving, partner connect and reused chat, invite, project
+      request/cancel, draft prefill, profile reset, and notifications can
+      each be exercised against the baseline adapter. Report any temporary
+      mock behavior and give the coordinator wiring instructions.
+
+B2 | Mattias | Codex | BACKEND / CAMPUS DATA
+Owns: src/services/db/, AI_USAGE.d/B2.md.
+Task: Implement local reducer/store, typed commands and selectors, data
+      initialization and AsyncStorage persistence, one-thread-per-person
+      rules, simulated delivery, availability matching, invites, project
+      membership requests, and notification state. Use fixture clocks.
+Done: test rehydration and seed, capacity and idempotent joining, repeated
+      post vs. second post by same author, reply after leaving a screen,
+      same-date availability overlap, one session per accepted invite,
+      and project request/cancel. Export a compatible provider. No remote
+      server required.
+
+Shared files, coordinator only:
+  src/shared/**, src/app/** or the scaffold's equivalent route tree,
+  root entry and navigation, app.json or app.config.*, package.json,
+  lockfile, tsconfig, Babel/Metro/test configuration, global styling and
+  shared theme tokens, .gitignore, .gitattributes, .env.example,
+  AGENTS.md, CLAUDE.md, PLAN.md, BUILD_BRIEF.txt, README.md, AI_USAGE.md.
+
+Paths describe ownership, not a requirement to create every placeholder
+screen before implementing an end-to-end flow. If the Expo scaffold uses
+another route root, document the actual path without changing ownership.
+Lane A1 and B1 should build the core user flows first. Refine graph polish,
+animation, and visual extras after the relevant flows are usable.
+
+=================== RUNPANE AND CHECKPOINTS ===================
+
+Humans: verify both computers point to the same repo remote and the same
+approved baseline commit. Use RunPane on each computer. Register the actual
+absolute clone path if needed, and use the saved repo ID rather than assuming
+an active repo. Verify the local Claude and Codex agent launchers first.
+Use Pane Sessions and Panes following the installed Pane skill and CLI help.
+Each task gets its own Pane/worktree on a distinct Git branch. A worktree is
+a separate folder with its own checkout; a branch is how Git records and
+transfers that work. Never run two lanes in the same checkout.
+
+Matheus computer: A1 Claude Code and A2 Codex.
+Mattias computer: B1 Claude Code and B2 Codex.
+
+The four agents do not need to communicate directly. Each reads the same
+baseline contract. If something is missing, log the unresolved question in
+its own HANDOFF.md, report blocked through Pane when required, and continue
+independent work. Humans publish approved contract fixes to everyone.
+
+Before working, record lane, tool, current branch, worktree path, and baseline
+SHA. If checkout is main, the wrong branch, or an unexpected baseline, report
+the discrepancy rather than editing. Do not switch branches behind Pane.
+
+Checkpoints:
+  1. Contract check: list owned paths, fixture or adapter assumptions, and
+     first complete user flow. Record blockers and continue independent work.
+  2. Usable slice: one core flow works with fixtures or mocked transport.
+     Run its targeted check, add an entry to own AI_USAGE.d/<lane>.md, and
+     commit only owned files after inspecting the staged diff.
+  3. Feature complete: implement remaining priority paths, run typecheck
+     and relevant tests/lint, then commit only owned files. Include
+     baseline SHA, commit SHAs, screenshots if captured, test results,
+     unsolved issues, and exact integration steps in own HANDOFF.md.
+  4. Human integration: report ready. Do not merge, rebase, cherry-pick,
+     push, open a PR, modify another worktree, or resolve cross-lane
+     conflicts without the humans directing that operation. The setup
+     coordinator's separately approved baseline push is the sole exception.
+     Keep worktrees available until humans verify commits were transferred.
+
+Humans collect the committed lane branches from both machines through a
+human-approved push/PR or another agreed transfer method. Commit SHAs on
+one machine alone do not give the other machine access to the objects.
+Integrate on a human-controlled staging branch. Review and integrate A2
+and B2 providers first, wire root adapters, then integrate screens from
+A1 and B1 and wire routes. Do not let separate lanes edit root files to
+solve an integration problem. Run typecheck, lint, tests, and phone QA and
+review the combined diff before a human merges.
+
+AI_USAGE.d entries:
+  - [time] [A1/A2/B1/B2] [actual tool] – change, checks, human input if known
+The coordinator consolidates the lane files into AI_USAGE.md after transfer.
+The Tools section can name Claude Code, Codex, and Pane with the actual
+users and uses once verified. Under What we did ourselves, leave prompts
+for Matheus and Mattias to fill in their own decisions, testing, and work.
+
+=================== LANE LAUNCH PROMPTS ===================
+
+A1 prompt:
+You are A1, Matheus's Claude Code frontend lane. Read AGENTS.md, PLAN.md
+and BUILD_BRIEF.txt in this RunPane worktree. Build the Work Feed,
+Course Galaxy graphs, Calendar and Canvas Settings UI described there.
+Use only your owned paths and the baseline fixtures/adapters. Prioritize
+working list/calendar flows before physics polish. Follow the checkpoints,
+commit owned files locally, write your handoff, and stop for human
+integration. Do not push, merge, rebase, or touch shared files.
+
+A2 prompt:
+You are A2, Matheus's Codex backend/data lane. Read AGENTS.md, PLAN.md
+and BUILD_BRIEF.txt in this RunPane worktree. Build and test the Canvas
+transport, translation, credential storage and calendar cache/provider.
+Use mocked fixtures and frozen contracts. Follow the checkpoints, commit
+owned files locally, write your handoff, and stop for human integration.
+Do not push, merge, rebase, or touch shared files.
+
+B1 prompt:
+You are B1, Mattias's Claude Code frontend lane. Read AGENTS.md, PLAN.md
+and BUILD_BRIEF.txt in this RunPane worktree. Build the campus experiences:
+sessions, partner finder/availability, chat, projects, profile, notifications
+and creation. Use the baseline mock adapters and agreed route params.
+Follow the checkpoints, commit owned files locally, write your handoff,
+and stop for human integration. Do not push, merge, rebase, or edit shared
+files.
+
+B2 prompt:
+You are B2, Mattias's Codex backend/data lane. Read AGENTS.md, PLAN.md
+and BUILD_BRIEF.txt in this RunPane worktree. Build and test the local
+campus data provider, persistence, reducer rules and selectors. Match the
+frozen adapter and use injectable clocks in tests. Follow the checkpoints,
+commit owned files locally, write your handoff, and stop for human
+integration. Do not push, merge, rebase, or touch shared files.
+
+=================== FINAL INTEGRATION CHECKLIST ===================
+
+[ ] Fresh checkout installs from the one lockfile and launches in Expo Go.
+[ ] Typecheck, lint, and relevant tests pass on integrated staging.
+[ ] All five app tabs and all five Feed sections are reachable on a phone.
+[ ] List accordion state, graph tabs, selection, viewport, and reduced
+    motion behave as specified. Graph gestures do not block Feed navigation.
+[ ] Join a live session and confirm attendee/count updates across screens.
+[ ] A second post by the same person reuses the chat and adds context.
+[ ] Matching availability yields an invite and one simulated session.
+[ ] Project join request leaves the roster and personal connections intact.
+[ ] Flip Calendar List/Month, use the filter, select a day, and return Today.
+[ ] In an authorized live Canvas test or fixture, verify correct links,
+    stable IDs on reschedule, failed-sync fallback, account switching and
+    disconnect cleanup. Inspect logs and staged changes for secrets.
+[ ] Verify offline sample mode is clearly labeled. Document what is local.
+[ ] Confirm participation, reuse and AI disclosures before submitting.
+[ ] Humans approve and perform the final merge and public submission.
