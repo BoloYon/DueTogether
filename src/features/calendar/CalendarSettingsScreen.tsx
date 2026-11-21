@@ -54,7 +54,7 @@ export function CalendarSettingsScreen({ clock }: { clock?: Clock } = {}) {
       <CanvasConnectForm calendar={calendar} replacing={live} />
 
       <Txt variant="caption" tone="secondary">
-        Your token is kept in this device’s secure storage and is never shown again, logged or shared. Grades and submissions are not read. Coursework is cached on this device so the calendar works offline.
+        Your token stays in secure storage. Coursework is cached for offline use. DueTogether never reads grades or submissions.
       </Txt>
     </ScrollView>
   </View>;

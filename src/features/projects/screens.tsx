@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
 import {
-  Avatar, Badge, Body, Button, Card, EmptyState, ErrorBanner, ListRow, Notice, Row, Screen, Section, Segmented, Title, formatAgo, useNow,
+  Avatar, Badge, Body, Button, Card, EmptyState, ErrorBanner, ListRow, Notice, Row, Screen, Section, Segmented,
 } from '@/components/campus';
 import { personById } from '@/features/sessions/logic';
 import { useCampus } from '@/shared/adapters';
@@ -29,22 +29,18 @@ function useProjectAction(project: Project | undefined) {
 function ProjectCard({ project }: { project: Project }) {
   const { state } = useCampus();
   const router = useRouter();
-  const now = useNow(60_000);
   const view = describeProject(state, project);
-  const owner = personById(state, project.ownerId);
   const { error, run } = useProjectAction(project);
   return (
-    <Card>
+    <Card style={{ gap: 8 }}>
+      <Body bold>{project.title}</Body>
       <Row wrap>
         <Badge label={view.categoryLabel} tone="accent" />
-        <Badge label={view.statusLabel} tone={statusTone[view.status]} />
-        <Body small secondary>{formatAgo(project.createdAt, now)}</Body>
+        {view.status !== 'open' && <Badge label={view.statusLabel} tone={statusTone[view.status]} />}
       </Row>
-      <Body bold>{project.title}</Body>
       <Body secondary numberOfLines={3}>{project.pitch}</Body>
-      <Body small>{`Owner: ${owner?.name ?? 'Unknown'}${owner?.id === state.currentUser.id ? ' (you)' : ''}`}</Body>
       {project.openRoles.length > 0 && <Body small secondary>{`Roles: ${project.openRoles.join(', ')}`}</Body>}
-      <Body small>{view.occupancyText}</Body>
+      <Body small secondary>{project.teamIds.length}/{project.capacity} on team</Body>
       <ErrorBanner message={error} />
       <Row>
         <Button flex label="Details" variant="secondary" accessibilityLabel={`View details: ${project.title}`}
@@ -62,12 +58,12 @@ export function ProjectsScreen() {
   const projects = sortedProjects(state, filter);
   return (
     <TabPage title="Projects" contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <Body small secondary>Campus demo · Requests stay on this device</Body>
       <Segmented label="Show projects" value={filter} onChange={setFilter}
         options={[{ value: 'all', label: 'All' }, { value: 'mine', label: 'Yours & requested' }]} />
       {projects.length ? projects.map(project => <ProjectCard key={project.id} project={project} />)
         : <EmptyState title={filter === 'mine' ? 'Nothing here yet' : 'No projects yet'}
           body={filter === 'mine' ? 'Ask to join a project or create one.' : 'Create the first project and list the roles you need.'} />}
-      <Notice tone="neutral">Sample projects with fictional students. Requests stay on this device.</Notice>
     </TabPage>
   );
 }
@@ -80,7 +76,7 @@ export function ProjectScreen({ id }: DetailParams) {
   if (!project) {
     return (
       <Screen title="Project">
-        <EmptyState title="Project unavailable" body="It may have been removed or the demo was reset."
+        <EmptyState title="Project unavailable" body="Return to Projects to browse available teams."
           action={<Button label="Browse projects" variant="secondary" onPress={() => router.navigate(routes.projects)} />} />
       </Screen>
     );
@@ -95,13 +91,8 @@ export function ProjectScreen({ id }: DetailParams) {
         <Badge label={view.categoryLabel} tone="accent" />
         <Badge label={view.statusLabel} tone={statusTone[view.status]} />
       </Row>
-      <Title>{project.title}</Title>
       <Body>{project.pitch}</Body>
-      <Card>
-        <Body bold>{view.occupancyText}</Body>
-        <Body secondary>{`Team size ${project.capacity}, including the owner`}</Body>
-      </Card>
-      {view.note && <Notice tone={view.status === 'requested' ? 'warning' : 'neutral'}>{view.note}</Notice>}
+      {view.status === 'requested' && <Notice tone="warning">Awaiting the owner’s response in the demo.</Notice>}
       <ErrorBanner message={error} />
 
       <Section title="Open roles" count={project.openRoles.length}>
@@ -110,7 +101,8 @@ export function ProjectScreen({ id }: DetailParams) {
           : <Body secondary>No open roles listed.</Body>}
       </Section>
 
-      <Section title="Team" count={team.length}>
+      <Section title="Team">
+        <Body small secondary>{view.occupancyText}</Body>
         {team.map(person => (
           <ListRow key={person!.id}
             leading={<Avatar name={person!.name} initials={person!.initials} size={34} />}
@@ -120,7 +112,6 @@ export function ProjectScreen({ id }: DetailParams) {
             accessibilityHint={person!.id === me ? undefined : 'Opens profile'} />
         ))}
       </Section>
-      <Notice tone="neutral">Asking to join does not add you to the team or create a personal connection.</Notice>
     </Screen>
   );
 }

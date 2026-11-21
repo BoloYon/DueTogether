@@ -89,12 +89,12 @@ export function FilledSwitch<T extends string>({ options, value, onChange, label
 }
 
 /** Quieter compact outlined toggle (List / Graph, Upcoming / Past). Visually distinct from FilledSwitch and underline tabs. */
-export function CompactToggle<T extends string>({ options, value, onChange, label }: { options: { value: T; label: string }[]; value: T; onChange: (value: T) => void; label: string }) {
+export function CompactToggle<T extends string>({ options, value, onChange, label }: { options: { value: T; label: string; accessibilityLabel?: string }[]; value: T; onChange: (value: T) => void; label: string }) {
   const palette = usePalette();
   return <View accessibilityRole="radiogroup" accessibilityLabel={label} style={[styles.compact, { borderColor: palette.border }]}>
     {options.map(option => {
       const selected = option.value === value;
-      return <Pressable key={option.value} accessibilityRole="radio" aria-checked={selected} accessibilityLabel={option.label}
+      return <Pressable key={option.value} accessibilityRole="radio" aria-checked={selected} accessibilityLabel={option.accessibilityLabel ?? option.label}
         onPress={() => onChange(option.value)} hitSlop={{ top: 6, bottom: 6 }}
         style={[styles.compactOption, selected && { backgroundColor: palette.backgroundSelected }]}>
         <Text style={[styles.compactText, { color: selected ? palette.text : palette.textSecondary, fontWeight: selected ? '700' : '500' }]}>{option.label}</Text>
@@ -146,11 +146,11 @@ export function Banner({ title, body, tone = 'neutral', action }: { title: strin
   </View>;
 }
 
-export function EmptyState({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
+export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   const palette = usePalette();
   return <View style={styles.empty}>
     <Text style={[styles.emptyTitle, { color: palette.text }]}>{title}</Text>
-    <Text style={[styles.emptyBody, { color: palette.textSecondary }]}>{body}</Text>
+    {body && <Text style={[styles.emptyBody, { color: palette.textSecondary }]}>{body}</Text>}
     {action}
   </View>;
 }

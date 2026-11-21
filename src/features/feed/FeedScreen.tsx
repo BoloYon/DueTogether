@@ -45,8 +45,8 @@ export function FeedScreen({ clock }: { clock?: Clock } = {}) {
 
     {area === 'social' ? <SocialPreview /> : <>
       <View style={styles.subhead}>
-        <Txt variant="caption" tone="secondary" style={styles.flex}>Fictional campus demo · {calendar.mode === 'sample' ? 'sample coursework' : 'your Canvas coursework'}</Txt>
-        <CompactToggle label="Feed view" value={view} onChange={changeView} options={[{ value: 'list', label: 'List View' }, { value: 'graph', label: 'Graph View' }]} />
+        <Txt variant="caption" tone="secondary" style={styles.flex}>Campus demo · {calendar.mode === 'sample' ? 'Sample coursework' : 'Your Canvas'}</Txt>
+        <CompactToggle label="Feed view" value={view} onChange={changeView} options={[{ value: 'list', label: 'List', accessibilityLabel: 'List View' }, { value: 'graph', label: 'Graph', accessibilityLabel: 'Graph View' }]} />
       </View>
       <Reveal key={view} reducedMotion={reducedMotion} animate={viewChanged}>
       {view === 'list'
@@ -62,6 +62,6 @@ export function FeedScreen({ clock }: { clock?: Clock } = {}) {
 const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 48, gap: 14 },
   bullU: { width: 44, aspectRatio: 165 / 218, borderRadius: 8 },
-  flex: { flexGrow: 1, flexShrink: 1, flexBasis: 132 },
+  flex: { flexGrow: 1, flexShrink: 1, flexBasis: 144 },
   subhead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 },
 });

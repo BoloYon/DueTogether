@@ -40,11 +40,11 @@ export function CalendarStatus({ calendar, now, compact }: { calendar: CalendarA
   const settings = <Button compact tone="secondary" label={calendar.mode === 'sample' ? 'Connect' : 'Settings'} accessibilityLabel="Open calendar settings" onPress={() => router.push(routes.calendarSettings)} />;
   return <View style={styles.status}>
     {calendar.mode === 'sample'
-      ? <Banner tone="warning" title="Sample calendar · fictional coursework" body="This is demo data, not your Canvas account." action={compact ? undefined : settings} />
+      ? <Banner tone="warning" title="Sample coursework" action={compact ? undefined : settings} />
       : <Banner tone="accent" title={`Canvas · ${calendar.account?.name ?? 'Connected'}`}
         body={calendar.status === 'syncing' ? 'Syncing…' : lastSyncedLabel(calendar.lastSyncedAt, now)}
         action={compact ? undefined : <Button compact tone="secondary" icon="refresh" label="Sync now" busy={calendar.status === 'syncing'} onPress={() => { calendar.sync(); }} />} />}
-    {calendar.status === 'connecting' && <Banner title="Connecting to Canvas…" body="Loading your account and coursework before switching." />}
+    {calendar.status === 'connecting' && <Banner title="Connecting to Canvas…" />}
     {calendar.error && <ErrorBanner calendar={calendar} />}
   </View>;
 }
@@ -93,9 +93,6 @@ export function CalendarScreen({ clock }: { clock?: Clock } = {}) {
 
   return <TabPage title="Calendar" contentContainerStyle={styles.content}
     refreshControl={calendar.mode === 'live' ? <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.accent} /> : undefined}>
-    <View style={styles.headerRow}>
-      <Txt variant="small" tone="secondary" style={styles.flex}>Only you can see your coursework here.</Txt>
-    </View>
     <CalendarStatus calendar={calendar} now={now} />
 
     <View style={styles.controls}>
@@ -106,8 +103,8 @@ export function CalendarScreen({ clock }: { clock?: Clock } = {}) {
     {noItems ? <EmptyState
       title={calendar.mode === 'live' ? 'No coursework in this window' : 'No coursework to show'}
       body={calendar.mode === 'live'
-        ? 'Canvas returned nothing dated between 120 days ago and 180 days ahead. Pull down or tap Sync now to check again.'
-        : 'Connect your own Canvas account in Settings, or load the labeled sample calendar for a no-network demo.'}
+        ? 'No Canvas items from 120 days ago to 180 days ahead. Sync to check again.'
+        : 'Connect Canvas or load fictional sample coursework.'}
       action={calendar.mode === 'live' ? undefined : <View style={styles.row}>
         <Button tone="primary" label="Connect Canvas" onPress={() => router.push(routes.calendarSettings)} />
         <Button label="Use sample calendar" onPress={calendar.enterSampleMode} />
@@ -117,7 +114,7 @@ export function CalendarScreen({ clock }: { clock?: Clock } = {}) {
           <CompactToggle label="Time range" value={listRange} onChange={setListRange} options={[{ value: 'upcoming', label: 'Upcoming' }, { value: 'past', label: 'Past' }]} />
           {groups[listRange].length === 0
             ? <EmptyState title={listRange === 'upcoming' ? 'Nothing upcoming' : 'Nothing in the past window'}
-              body={examsOnly ? 'No exams or quizzes here. Turn off the Exams & quizzes filter to see everything.' : listRange === 'upcoming' ? 'You’re all caught up for the synced window.' : 'Past items appear once their deadline or event end has passed.'} />
+              body={examsOnly ? 'Turn off Exams & quizzes to see all coursework.' : undefined} />
             : groups[listRange].map(group => <View key={group.key}>
               <Txt variant="small" tone="secondary" style={styles.dayHeader}>{dayHeading(group.key, now)}</Txt>
               {group.items.map(item => <CanvasItemRow key={item.id} item={item} now={now} sample={sample} />)}
@@ -128,7 +125,7 @@ export function CalendarScreen({ clock }: { clock?: Clock } = {}) {
             onSelect={selectDay} onShift={delta => setMonth(current => shiftMonth(current.year, current.month, delta))} onToday={goToday} />
           <Txt variant="heading" style={styles.dayHeader}>{dayHeading(selected, now)}</Txt>
           {(byDay.get(selected) ?? []).length === 0
-            ? <EmptyState title="Nothing on this day" body={examsOnly ? 'No exams or quizzes. Turn off the filter to see all coursework.' : 'Pick a day with a marker to see its coursework.'} />
+            ? <EmptyState title="Nothing on this day" body={examsOnly ? 'Turn off Exams & quizzes to see all coursework.' : 'Choose a day with a marker.'} />
             : byDay.get(selected)!.map(item => <CanvasItemRow key={item.id} item={item} now={now} sample={sample} />)}
         </Reveal>}
   </TabPage>;
@@ -181,8 +178,6 @@ function MonthGrid({ year, month, selected, today, byDay, onSelect, onShift, onT
 
 const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 48, gap: 14 },
-  headerRow: { flexDirection: 'row', alignItems: 'center' },
-  flex: { flex: 1 },
   status: { gap: 8 },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 },
   section: { gap: 6 },

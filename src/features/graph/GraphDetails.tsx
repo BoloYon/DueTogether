@@ -19,7 +19,7 @@ export function GraphDetails({ node, sections, items, actions, now, sample }: {
 }) {
   const { state } = actions;
   if (!node) {
-    return <Card><Txt variant="small" tone="secondary">Tap a node, or choose one from Browse nodes, to see details and actions here.</Txt></Card>;
+    return <Card><Txt variant="small" tone="secondary">Select a node or use Browse nodes.</Txt></Card>;
   }
   const error = actions.errors[node.entityId];
   let content;
