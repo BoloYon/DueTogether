@@ -1,1 +1,1 @@
-export { ProfileSettingsScreen as default } from '@/shared/baselineScreens';
+export { ProfileSettingsScreen as default } from '@/features/profile';

@@ -1,1 +1,1 @@
-export { PartnersScreen as default } from '@/shared/baselineScreens';
+export { PartnersScreen as default } from '@/features/partners';

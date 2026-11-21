@@ -1,1 +1,1 @@
-export { ProjectsScreen as default } from '@/shared/baselineScreens';
+export { ProjectsScreen as default } from '@/features/projects';
