@@ -30,3 +30,19 @@ Tests used fictional coursework and in-memory stores. Native device QA and autho
 4. Keep real credentials and personal coursework out of captures and console output. The human integrator handles the route wiring and transfer.
 
 The transport uses the baseline Expo SDK’s native fetch with manual redirects. Planner translation follows the public Canvas planner endpoint and its serializer. [Expo SDK reference](https://docs.expo.dev/versions/v58.0.0/sdk/expo/) · [Canvas Planner API](https://developerdocs.instructure.com/services/canvas/resources/planner) · [Canvas planner serializer](https://github.com/instructure/canvas-lms/blob/master/lib/api/v1/planner_item.rb)
+
+## Live Canvas check (2026-11-21, transport @ 7dfdc52)
+
+Ran `createCanvasTransport()` against a real school Canvas account (GET only, own account, new PAT via Pane secret; nothing recorded beyond counts).
+
+- PASS getSelf: numeric id; account key `origin/<id>`.
+- PASS listCourses: 18 active courses; Link `rel="next"` pagination followed same-origin (9 pages at per_page=2).
+- PASS listPlannerItems: 3-week window 23 rows → 16 items; forced 5/page gave identical results; default 120/180 window paginated naturally (3 pages, 204 rows → 102 items).
+- PASS translation: all exact timestamps valid (live is always UTC `Z`), stable IDs `<type>:<id>`, all item URLs same-origin, every item matched a course with a code, no duplicates.
+- PASS failures: bad token → `auth`; nonexistent host → `network`; aborted → `cancelled` (pagination stopped); 5 ms → `timeout`; `http://` → `invalid-url`. No error contained the token, a URL or the host.
+- Rate headers present (`X-Rate-Limit-Remaining` 700, max `X-Request-Cost` ≈ 1.05); no 429 seen.
+
+Not exercised live: all-day calendar events (planner returned no `calendar_event` rows; check whether `context_codes[]` is needed), nickname, 429, missing-date skip.
+Follow-ups: exams are only detectable by type or title (live plannables have no quiz/assignment metadata); consider mapping `assessment_request` (peer reviews) to homework; a real token sent to a different Canvas host came back as `server`, not `auth`.
+
+Full redacted report: `docs/CANVAS_LIVE_CHECK.md`.
