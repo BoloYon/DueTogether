@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState, useSyncExternalStore, type PropsWithChildren } from 'react';
-import { AppState, Text, View, useColorScheme } from 'react-native';
+import { AppState, Text, View } from 'react-native';
 
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { CampusAdapterProvider } from '../../shared/adapters';
 import type { Clock } from '../../shared/types';
 import { removeMedia } from '@/services/profile-media/storage';
