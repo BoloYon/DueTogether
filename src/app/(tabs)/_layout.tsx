@@ -11,10 +11,10 @@ export default function TabLayout() {
   const unread = threadSummaries(state).filter(thread => thread.unread > 0).length;
   const manualInsets = Platform.OS === 'ios';
   return (
-    <NativeTabs backgroundColor={palette.background} tintColor={palette.accent} disableTransparentOnScrollEdge
+    <NativeTabs backgroundColor={palette.backgroundElement} tintColor={palette.accent} indicatorColor={palette.accentSoft} disableTransparentOnScrollEdge
       iconColor={{ default: palette.textSecondary, selected: palette.accent }}
       labelStyle={{ default: { color: palette.textSecondary }, selected: { color: palette.accent, fontWeight: '700' } }}
-      badgeBackgroundColor={palette.danger} labelVisibilityMode="labeled">
+      badgeBackgroundColor={palette.danger} badgeTextColor={palette.onDanger} labelVisibilityMode="labeled">
       <NativeTabs.Trigger name="index" disableAutomaticContentInsets={manualInsets}>
         <NativeTabs.Trigger.Label>Feed</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />

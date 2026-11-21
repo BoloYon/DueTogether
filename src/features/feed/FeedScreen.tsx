@@ -1,4 +1,5 @@
 import { TabPage } from '@/components/campus/TabPage';
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useCalendar } from '@/shared/adapters';
@@ -37,7 +38,10 @@ export function FeedScreen({ clock }: { clock?: Clock } = {}) {
   const changeArea = (next: Area) => { setGraphBusy(false); setArea(next); };
   const changeView = (next: WorkView) => { setGraphBusy(false); setViewChanged(true); setView(next); };
 
-  return <TabPage title="Feed" scrollEnabled={!graphBusy} style={{ backgroundColor: palette.page }} contentContainerStyle={styles.content}
+  return <TabPage title="Feed" titleTrailing={
+    <Image source={require('./usf-bull-u.png')} contentFit="contain" style={styles.bullU}
+      accessible accessibilityRole="image" accessibilityLabel="University of South Florida" />
+  } scrollEnabled={!graphBusy} style={{ backgroundColor: palette.page }} contentContainerStyle={styles.content}
     keyboardShouldPersistTaps="handled">
     <FilledSwitch label="Feed area" value={area} onChange={changeArea} options={[{ value: 'social', label: 'Social' }, { value: 'work', label: 'Work' }]} />
 
@@ -59,6 +63,7 @@ export function FeedScreen({ clock }: { clock?: Clock } = {}) {
 
 const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 48, gap: 14 },
-  flex: { flex: 1 },
-  subhead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  bullU: { width: 44, aspectRatio: 165 / 218, borderRadius: 8 },
+  flex: { flexGrow: 1, flexShrink: 1, flexBasis: 132 },
+  subhead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 },
 });

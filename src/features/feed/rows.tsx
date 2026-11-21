@@ -29,7 +29,7 @@ export function FeaturedLiveSession({ session, actions, now }: { session: StudyS
       accessibilityLabel={`Live now, featured: ${session.title}, ${courseOrTopic(session)}. ${timeLeftLabel(session, now)}. ${sessionPlace(session)}. ${attendanceLabel(session)}.`}
       onPress={() => router.push(routes.session(session.id))} style={styles.featuredMain}>
       <View style={styles.liveRow}>
-        <View style={[styles.liveBadge, { backgroundColor: palette.live }]}><Icon name="live" size={8} color="#fff" /><Txt variant="caption" style={styles.liveText}>LIVE</Txt></View>
+        <View style={[styles.liveBadge, { backgroundColor: palette.live }]}><Icon name="live" size={8} color={palette.onDanger} /><Txt variant="caption" style={[styles.liveText, { color: palette.onDanger }]}>LIVE</Txt></View>
         <Txt variant="small" tone="live" style={styles.bold}>{timeLeftLabel(session, now)}</Txt>
       </View>
       <Txt variant="heading">{session.title}</Txt>
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   featuredMain: { gap: 4 },
   liveRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  liveText: { color: '#fff', fontWeight: '800', letterSpacing: 0.5 },
+  liveText: { fontWeight: '800', letterSpacing: 0.5 },
   bold: { fontWeight: '600' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   actionsRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },

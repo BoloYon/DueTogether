@@ -7,3 +7,26 @@
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
 }
+
+/* Match the fixed Expo Router web tab bar to the space reserved by TabPage. */
+[role='tablist'][aria-label='Main'] {
+  top: 2px;
+  height: 44px;
+  padding-block: 0;
+  max-width: calc(100vw - 16px);
+}
+
+[role='tablist'][aria-label='Main'] > [role='tab'] {
+  padding-inline: clamp(6px, 2vw, 20px);
+}
+
+@media (max-width: 420px) {
+  [role='tablist'][aria-label='Main'] {
+    --expo-router-tabs-font-size: 12px;
+    --expo-router-tabs-badge-size: 15px;
+  }
+
+  [role='tablist'][aria-label='Main'] > [role='tab'] {
+    padding-inline: 8px;
+  }
+}
