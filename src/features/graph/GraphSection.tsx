@@ -9,6 +9,7 @@ import { useScreenReader } from '../feed/hooks';
 import { SECTION_ORDER, SECTION_TITLES, initialGraphSection, type FeedSections, type SectionKey } from '../feed/model';
 import { usePalette } from '../feed/palette';
 import { EmptyState, FilterChip, Icon, Tag, Txt } from '../feed/ui';
+import { useGalaxyTheme } from './galaxy';
 import { GraphDetails } from './GraphDetails';
 import { GraphStage } from './GraphStage';
 import type { GraphMemory } from './memory';
@@ -25,6 +26,7 @@ export function GraphSection({ sections, calendar, actions, now, memory, reduced
   reducedMotion: boolean; onInteraction: (active: boolean) => void;
 }) {
   const palette = usePalette();
+  const theme = useGalaxyTheme();
   const focused = useIsFocused();
   const screenReader = useScreenReader();
   const window = useWindowDimensions();
@@ -57,7 +59,7 @@ export function GraphSection({ sections, calendar, actions, now, memory, reduced
   const height = Math.round(Math.max(190, Math.min(width * 0.68, window.height * 0.34)));
 
   return <View style={styles.wrap}>
-    <UnderlineTabs active={active} sections={sections} onChange={setActive} />
+    <UnderlineTabs active={active} sections={sections} reducedMotion={reducedMotion} onChange={setActive} />
 
     {active === 'dueSoon' && <View style={styles.filters}>
       {DUE_RANGES.map(range => <FilterChip key={range.value} label={range.label} selected={dueRange === range.value} onPress={() => setDueRange(range.value)}
@@ -67,7 +69,7 @@ export function GraphSection({ sections, calendar, actions, now, memory, reduced
 
     <View onLayout={(event: LayoutChangeEvent) => setWidth(Math.round(event.nativeEvent.layout.width))}>
       {model.nodes.length === 0
-        ? <View style={[styles.emptyStage, { borderColor: palette.border, backgroundColor: palette.graphBg }]}>
+        ? <View style={[styles.emptyStage, { borderColor: theme.edge, backgroundColor: theme.surface }]}>
           <EmptyState title={`Nothing in ${SECTION_TITLES[active]}`} body={active === 'dueSoon' ? 'No coursework due in this range. Try another filter.' : 'Try another section, or switch to List view.'} />
         </View>
         : width > 0 && <GraphStage key={active} model={model} memory={memory.get(active)} onSave={patch => memory.save(active, patch)}
@@ -76,9 +78,10 @@ export function GraphSection({ sections, calendar, actions, now, memory, reduced
           selected={selected} onSelect={setSelected} onInteraction={onInteraction} />}
     </View>
 
-    {model.legend.length > 0 && model.nodes.length > 0 && <View style={styles.legend} accessibilityLabel="Legend" accessible>
+    {model.legend.length > 0 && model.nodes.length > 0 && <View style={[styles.legend, { backgroundColor: theme.surface, borderColor: theme.edge }]} accessible
+      accessibilityLabel={`Legend. ${model.legend.map(entry => entry.label).join(', ')}.`}>
       {model.legend.map(entry => <View key={entry.key} style={styles.legendItem}>
-        <Svg width={20} height={20}><LegendGlyph entry={entry} palette={palette} /></Svg>
+        <Svg width={20} height={20}><LegendGlyph entry={entry} palette={palette} theme={theme} /></Svg>
         <Txt variant="caption" tone="secondary">{entry.label}</Txt>
       </View>)}
     </View>}
@@ -101,15 +104,16 @@ export function GraphSection({ sections, calendar, actions, now, memory, reduced
 }
 
 /** Horizontal text tabs with an underline; scrolls the active tab into view. Distinct from both switches. */
-function UnderlineTabs({ active, sections, onChange }: { active: SectionKey; sections: FeedSections; onChange: (key: SectionKey) => void }) {
+function UnderlineTabs({ active, sections, reducedMotion, onChange }: { active: SectionKey; sections: FeedSections; reducedMotion: boolean; onChange: (key: SectionKey) => void }) {
   const palette = usePalette();
+  const theme = useGalaxyTheme();
   const scroll = useRef<ScrollViewInstance>(null);
   const offsets = useRef<Partial<Record<SectionKey, { x: number; width: number }>>>({});
   const [viewport, setViewport] = useState(0);
   useEffect(() => {
     const target = offsets.current[active];
-    if (target && viewport) scroll.current?.scrollTo({ x: Math.max(0, target.x - (viewport - target.width) / 2), animated: true });
-  }, [active, viewport]);
+    if (target && viewport) scroll.current?.scrollTo({ x: Math.max(0, target.x - (viewport - target.width) / 2), animated: !reducedMotion });
+  }, [active, viewport, reducedMotion]);
   return <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator={false} onLayout={event => setViewport(event.nativeEvent.layout.width)}
     accessibilityRole="tablist" style={[styles.tabs, { borderColor: palette.border }]} contentContainerStyle={styles.tabsContent}>
     {SECTION_ORDER.map(key => {
@@ -121,7 +125,7 @@ function UnderlineTabs({ active, sections, onChange }: { active: SectionKey; sec
         <Txt variant="small" style={{ color: selected ? palette.text : palette.textSecondary, fontWeight: selected ? '700' : '500' }}>
           {SECTION_TITLES[key]} <Txt variant="caption" tone="secondary">{String(count)}</Txt>
         </Txt>
-        <View style={[styles.underline, { backgroundColor: selected ? palette.accent : 'transparent' }]} />
+        <View style={[styles.underline, { backgroundColor: selected ? theme.selection : 'transparent' }]} />
       </Pressable>;
     })}
   </ScrollView>;
@@ -135,7 +139,7 @@ const styles = StyleSheet.create({
   underline: { height: 3, borderRadius: 2, marginTop: 8 },
   filters: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   emptyStage: { height: 200, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: 16, justifyContent: 'center' },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 4, padding: 8, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   browse: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
   nodeRow: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderRadius: 8 },
