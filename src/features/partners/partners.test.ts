@@ -7,7 +7,7 @@ import { makeCampusFixtures } from '@/shared/mockData';
 import { findAvailabilityOverlaps } from '@/shared/selectors';
 import type { CampusAction, CampusState } from '@/shared/types';
 import { buildWindow, connectState, inviteDraftFromMatch, inviteForMatch, isContact, minuteToInput, myWindows, searchPartners, windowPassed } from './logic';
-import { dayKeyOf, parseTimeOfDay } from '@/components/campus/format';
+import { atMinute, dayKeyOf, parseTimeOfDay } from '@/components/campus/format';
 
 const now = new Date(2026, 10, 21, 12).getTime();
 const seed = () => makeCampusFixtures(() => now);
@@ -118,4 +118,32 @@ test('availability: validate, add, edit, remove, then match and invite once into
   const session = state.sessions.find(item => item.id === invite.sessionId)!;
   assert.deepEqual([...session.attendeeIds].sort(), ['mira', 'you']);
   assert.ok(state.notifications.some(item => item.href === '/session/' + session.id && !item.read));
+});
+
+test('polish: a sent invite stays matched while the same-day overlap is trimmed minute by minute', () => {
+  let state = seed();
+  const day = myWindows(state, 'MAT 240')[0].date;
+  const inOverlap = atMinute(day, 11 * 60 + 35) + 20_000;
+  const first = findAvailabilityOverlaps(state, 'MAT 240', inOverlap).find(match => match.personId === 'mira')!;
+  let result;
+  [state, result] = run(state, { type: 'invite/send', draft: inviteDraftFromMatch(first, undefined, inOverlap) }, inOverlap);
+  assert.ok(result.ok);
+  const later = inOverlap + 90_000;
+  const trimmed = findAvailabilityOverlaps(state, 'MAT 240', later).find(match => match.personId === 'mira')!;
+  assert.notEqual(trimmed.startMinute, first.startMinute, 'fixture precondition: the start was trimmed');
+  assert.equal(inviteForMatch(state, trimmed)?.id, result.ok ? result.id : undefined, 'the existing invite is still found, so Send stays hidden');
+  state = advanceCampus(state, later + 5_000);
+  assert.equal(state.sessions.filter(session => session.attendeeIds.includes('mira') && session.id.endsWith('-session')).length, 1);
+});
+
+test('polish: sending a match computed from a stale clock still starts in the future', () => {
+  const state = seed();
+  const day = myWindows(state, 'MAT 240')[0].date;
+  const rendered = atMinute(day, 11 * 60 + 35) + 20_000;
+  const match = findAvailabilityOverlaps(state, 'MAT 240', rendered).find(item => item.personId === 'mira')!;
+  const pressed = rendered + 50_000;
+  const draft = inviteDraftFromMatch(match, undefined, pressed);
+  assert.ok(draft.startsAt > pressed && draft.endsAt === atMinute(day, match.endMinute));
+  const [, result] = run(state, { type: 'invite/send', draft }, pressed);
+  assert.ok(result.ok, 'stale render time no longer makes the invite invalid');
 });
