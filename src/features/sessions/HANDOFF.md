@@ -77,3 +77,49 @@ In `session/[id].tsx`, `person/[id].tsx`, `chat/[id].tsx`, `project/[id].tsx` an
 ## Open questions
 
 None blocking.
+
+## Polish pass
+
+| | |
+| --- | --- |
+| Lane | B-polish · Claude Code (Claude Opus 5.5) · approved by Mattias (B1/B2 owner) through the Pane orchestrator |
+| Worktree / branch | `worktrees/lane-b-polish` · `lane-b-polish` |
+| Baseline | `4729820748397558de8c579456d97f8e6ae764fd` (main after PR #1 merged the B lanes) |
+| Commits | `58a81dd` invite match fix and tests · `11c5243` accessibility fixes · plus the commit that adds this section and `AI_USAGE.d/B-polish.md` |
+| Status | Local commits only. Not pushed, merged or rebased. |
+
+### Checks
+
+| Check | Before (4729820) | After |
+| --- | --- | --- |
+| `npm run typecheck` | clean | clean |
+| `npm run lint` | clean | clean |
+| `npm test` (macOS, sh) | 5/5. Only the `src/shared` tests run. See proposal 1 | 5/5, same reason |
+| All test files, run directly (`npx tsx --test $(find src -name '*.test.ts*')`) | 25/25 | 27/27 (2 new B1 tests) |
+
+### Acceptance items rechecked
+
+B1: join/save, partner connect with reused chat, project request/cancel, draft prefill from `CreateParams` (including Canvas "Study for this" with `kind: 'session'`), profile reset and notifications all behave as the B1 handoff describes. **Invite failed** (fixed, see below). B2: rehydration and seed, idempotent capacity-aware joins, two posts by one author, off-screen reply delivery, same-date availability overlap, one session per accepted invite and project request/cancel all hold at the data layer. The invite bug was in the B1 UI, which could send a second invite for the same match and so create a second session.
+
+### Fixes
+
+1. **Duplicate invite for one match** (`partners/logic.ts` `inviteForMatch`). On a match's own day, `findAvailabilityOverlaps` trims the start to the current minute. `inviteForMatch` compared exact start times, so one minute after sending it no longer found the invite. "Send study invite" reappeared, and a second send would create a second simulated session. It now matches on person, course and overlapping time. Test: `polish: a sent invite stays matched…`.
+2. **Invite rejected after a stale render** (`partners/logic.ts` `inviteDraftFromMatch`, `parts.tsx` `MatchCard`). Matches are computed from `useNow`, which can be up to 15 s old. The trimmed start could already be past at tap time, so the reducer returned "Choose a student, course, and future time." The draft now takes the press time and clamps the start to the next whole minute. Test: `polish: sending a match computed from a stale clock…`.
+3. **Accessibility.**
+   - `Segmented` segments are now 44 pt tall (were 42).
+   - Chat bubble timestamps and course tags no longer use opacity 0.8. On the light outgoing bubble that dropped 12 pt text to about 4.3:1. They now use the full bubble text color (5.8:1).
+   - Avatar initials cap font scaling at 1.2× so they stay inside their fixed circle at large system text sizes. Avatars are hidden from screen readers, and names are shown beside them.
+   - The B2 loading screen (`services/db/provider.tsx`) follows the system color scheme instead of flashing white in dark mode.
+
+   These are style-only changes with no test harness (no renderer dependency is allowed). Every palette text/background pair was checked at 4.55:1 or higher. No campus screen animates, so reduced motion needs no change.
+
+### Open issues
+
+- Phone QA in Expo Go is still pending, as in the B1 list above: keyboard offset 90 on Create/Chat, larger Dynamic Type on chip rows, VoiceOver/TalkBack on chips and tabs.
+- Screens read `Date.now` through `useNow` rather than the provider's injected `clock`. Tests inject time through pure functions, so this only matters for a clock-driven harness.
+- If an invite's clamped start reaches the window end (under a minute left), the reducer rejects the send with its generic message. The match disappears on the next tick.
+
+### Proposed shared changes (coordinator)
+
+1. **`package.json` `test` script.** Quote the globs: `tsx --test "src/**/*.test.ts" "src/**/*.test.tsx"`. Unquoted, `sh` (macOS/Linux/CI) expands `**` without globstar, so only `src/shared/*.test.ts` runs and 20 lane tests are skipped silently. On Windows `cmd` passes the pattern through and Node expands it, which is why B1/B2 reported every test running.
+2. `mockCampus.ts` `invite/send`: a specific message when the remaining window is under a minute would read better than the generic one.

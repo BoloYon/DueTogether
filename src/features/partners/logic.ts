@@ -70,20 +70,32 @@ export function minuteToInput(minute: number) {
   return `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
 }
 
-export function inviteDraftFromMatch(match: AvailabilityMatch, location?: string): InviteDraft {
+/**
+ * Invite draft for a match. Same-day matches are trimmed to the minute they
+ * were computed at, which may be a stale render clock; pass `now` at send
+ * time so the start is clamped to the next whole minute that is still ahead.
+ */
+export function inviteDraftFromMatch(match: AvailabilityMatch, location?: string, now?: number): InviteDraft {
+  const startsAt = atMinute(match.date, match.startMinute);
+  const nextMinute = now === undefined ? startsAt : Math.floor(now / 60_000) * 60_000 + 60_000;
   return {
     personId: match.personId,
     course: match.course,
-    startsAt: atMinute(match.date, match.startMinute),
+    startsAt: Math.max(startsAt, nextMinute),
     endsAt: atMinute(match.date, match.endMinute),
     ...(location?.trim() ? { location: location.trim() } : {}),
   };
 }
 
-/** Existing invite covering the same person, course and start, so we do not double-send. */
+/**
+ * Existing invite for this match, so we do not double-send. Same-day matches
+ * start later as time passes, so match on person, course and overlapping time
+ * rather than the exact start.
+ */
 export function inviteForMatch(state: CampusState, match: AvailabilityMatch): StudyInvite | undefined {
   const draft = inviteDraftFromMatch(match);
-  return state.invites.find(invite => invite.personId === draft.personId && invite.course === draft.course && invite.startsAt === draft.startsAt);
+  return state.invites.find(invite => invite.personId === draft.personId && invite.course === draft.course
+    && invite.startsAt < draft.endsAt && invite.endsAt > draft.startsAt);
 }
 
 export function sortedInvites(state: CampusState) {

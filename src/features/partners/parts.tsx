@@ -79,7 +79,7 @@ export function MatchCard({ match, location }: { match: AvailabilityMatch; locat
   const existing = inviteForMatch(state, match);
   const name = person?.name ?? 'Classmate';
   const send = () => {
-    const result = dispatch({ type: 'invite/send', draft: inviteDraftFromMatch(match, location) });
+    const result = dispatch({ type: 'invite/send', draft: inviteDraftFromMatch(match, location, Date.now()) });
     setError(result.ok ? null : result.message);
   };
   return (
