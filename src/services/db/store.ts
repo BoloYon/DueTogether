@@ -1,6 +1,6 @@
-﻿import { advanceCampus, transitionCampus } from '../../shared/mockCampus';
+import { advanceCampus, transitionCampus } from '../../shared/mockCampus';
 import { makeCampusFixtures } from '../../shared/mockData';
-import type { CampusAction, CampusAdapter, CampusState, Clock } from '../../shared/types';
+import type { CampusAdapter, CampusState, Clock } from '../../shared/types';
 
 export const CAMPUS_STORAGE_KEY = '@duetogether/campus/v1';
 
@@ -50,7 +50,10 @@ export async function openCampusStore(storage: CampusStorage, clock: Clock = Dat
     if (!canWrite) return;
     const serialized = JSON.stringify({ version: 1, sequence, state } satisfies Snapshot);
     dirty = false;
-    writes = writes.then(() => storage.setItem(CAMPUS_STORAGE_KEY, serialized)).catch(() => {
+    writes = writes.then(async () => {
+      await storage.setItem(CAMPUS_STORAGE_KEY, serialized);
+      dirty = false;
+    }).catch(() => {
       dirty = true;
     });
   }
@@ -69,7 +72,7 @@ export async function openCampusStore(storage: CampusStorage, clock: Clock = Dat
     publish(advanceCampus(state, clock()));
   }
 
-  const dispatch: CampusAdapter['dispatch'] = (action: CampusAction) => {
+  const dispatch: CampusAdapter['dispatch'] = (action) => {
     const now = clock();
     const id = 'campus-' + (sequence + 1);
     const [next, result] = transitionCampus(advanceCampus(state, now), action, now, id);
