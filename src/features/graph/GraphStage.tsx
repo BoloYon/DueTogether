@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureDetector, GestureStateManager, usePanGesture, usePinchGesture, useSimultaneousGestures, useTapGesture } from 'react-native-gesture-handler';
-import Svg, { G, Rect } from 'react-native-svg';
+import Svg, { G } from 'react-native-svg';
 import { usePalette } from '../feed/palette';
 import { IconButton } from '../feed/ui';
+import { GalaxySky, useGalaxyTheme } from './galaxy';
 import {
   createSimulation, fitViewport, hitTest, pin, positionsOf, release, settle, step, zoomAt,
   type Point, type Positions, type Simulation, type Viewport,
@@ -32,6 +33,7 @@ export function GraphStage({ model, summary, memory, onSave, width, height, redu
   selected: string | null; onSelect: (id: string | null) => void; onInteraction: (active: boolean) => void;
 }) {
   const palette = usePalette();
+  const theme = useGalaxyTheme();
   const signature = useMemo(() => signatureOf(model), [model]);
   const [positions, setPositions] = useState<Positions>(memory.positions);
   const [viewport, setViewportState] = useState<Viewport | null>(memory.viewport);
@@ -222,11 +224,11 @@ export function GraphStage({ model, summary, memory, onSave, width, height, redu
   const byId = new Map(model.nodes.map(node => [node.id, node]));
   const view = viewport ?? { scale: 1, x: width / 2, y: height / 2 };
 
-  return <View style={[styles.stage, { height, backgroundColor: palette.graphBg, borderColor: palette.border }]}>
+  return <View style={[styles.stage, { height, backgroundColor: theme.field, borderColor: theme.edge }]}>
     <GestureDetector gesture={gesture}>
       <View style={StyleSheet.absoluteFill} accessible accessibilityRole="image" accessibilityLabel={summary}>
         {width > 0 && <Svg width={width} height={height}>
-          <Rect x={0} y={0} width={width} height={height} fill={palette.graphBg} />
+          <GalaxySky width={width} height={height} theme={theme} />
           {/* Nested groups make the order explicit: translate the stage, then scale the world. */}
           <G transform={`translate(${view.x}, ${view.y})`}>
           <G transform={`scale(${view.scale})`}>
@@ -235,13 +237,13 @@ export function GraphStage({ model, summary, memory, onSave, width, height, redu
               const to = positions[link.target];
               if (!from || !to) return null;
               const lit = !!highlight && highlight.has(link.source) && highlight.has(link.target);
-              return <LinkLine key={link.id} link={link} from={from} to={to} palette={palette}
-                hue={byId.get(link.target)?.hue ?? palette.graphLink} dimmed={!!highlight && !lit} highlighted={lit} />;
+              return <LinkLine key={link.id} link={link} from={from} to={to} theme={theme}
+                hue={byId.get(link.target)?.hue ?? theme.link} dimmed={!!highlight && !lit} highlighted={lit} />;
             })}
             {model.nodes.map(node => {
               const point = positions[node.id];
               if (!point) return null;
-              return <NodeShape key={node.id} node={node} x={point.x} y={point.y} palette={palette}
+              return <NodeShape key={node.id} node={node} x={point.x} y={point.y} palette={palette} theme={theme}
                 selected={node.id === selected} dimmed={!!highlight && !highlight.has(node.id)} />;
             })}
           </G>
@@ -249,7 +251,7 @@ export function GraphStage({ model, summary, memory, onSave, width, height, redu
         </Svg>}
       </View>
     </GestureDetector>
-    <View style={[styles.controls, { backgroundColor: palette.card, borderColor: palette.border }]}>
+    <View style={[styles.controls, { backgroundColor: theme.surface, borderColor: theme.edge }]}>
       <IconButton icon="plus" label="Zoom in" onPress={() => zoomBy(1.25)} />
       <IconButton icon="minus" label="Zoom out" onPress={() => zoomBy(0.8)} />
       <IconButton icon="fit" label="Fit graph to view" onPress={fit} />
