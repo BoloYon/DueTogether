@@ -20,3 +20,9 @@ The bundled Bull U is the original 165 × 218 PNG with a white background. It ha
 - Chromium rendered Feed at 320, 360, and 1280 CSS px in light and dark. Checked the logo label, intrinsic PNG size, aspect ratio, right and vertical alignment, and page overflow. Opened Graph View and Social and visited the other four tabs in both modes.
 - Local verification used fictional campus and sample coursework data. UI captures and QA tooling live in this worktree’s Pane scratch.
 - The isolated iOS development build bundled and rendered the light Feed and logo behind a system confirmation dialog. Unobstructed iOS captures, native dark appearance, and native gesture checks are pending. Android was outside this QA pass.
+
+## Starfield follow-up
+
+The follow-up builds on `312ca3c`, the experiment commit included in main at `a392384`. The viewport backdrop uses a 48-point grid and a fixed tile of square, four-point, and stepped stars. Dark appearance uses the reference base `#0B0911` and a deep purple grid. Light appearance pairs the existing pale shell with a subdued grid and muted stars. The same decoration covers tab, detail, and settings screens. Navigation chrome, cards, and controls retain their surface colors where they need a solid fill. The graph files and their artwork are identical to the prior commit.
+
+The SVG layer sits behind scrollable content and stays out of hit testing and the accessibility tree. It uses the existing appearance context and React-generated IDs for deterministic server and client markup. The narrow Chromium checks cover all 19 tab and detail/settings routes, the appearance control, and entry to Graph View. Native rendering was outside the follow-up QA pass. The follow-up used a separate Expo preview on port 8138.

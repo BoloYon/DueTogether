@@ -10,7 +10,6 @@ import { useFeedActions } from './actions';
 import { FeedList, type ExpandedOverrides } from './FeedList';
 import { useFocusedNow, useReducedMotion } from './hooks';
 import { feedSections } from './model';
-import { usePalette } from './palette';
 import { Reveal } from './Reveal';
 import { SocialPreview } from './SocialPreview';
 import { CompactToggle, FilledSwitch, Txt } from './ui';
@@ -20,7 +19,6 @@ type WorkView = 'list' | 'graph';
 
 /** Work / Social Feed. Route export for `/`. `clock` is an optional test/harness seam. */
 export function FeedScreen({ clock }: { clock?: Clock } = {}) {
-  const palette = usePalette();
   const calendar = useCalendar();
   const now = useFocusedNow(clock);
   const actions = useFeedActions(now);
@@ -41,7 +39,7 @@ export function FeedScreen({ clock }: { clock?: Clock } = {}) {
   return <TabPage title="Feed" titleTrailing={
     <Image source={require('./usf-bull-u.png')} contentFit="contain" style={styles.bullU}
       accessible accessibilityRole="image" accessibilityLabel="University of South Florida" />
-  } scrollEnabled={!graphBusy} style={{ backgroundColor: palette.page }} contentContainerStyle={styles.content}
+  } scrollEnabled={!graphBusy} contentContainerStyle={styles.content}
     keyboardShouldPersistTaps="handled">
     <FilledSwitch label="Feed area" value={area} onChange={changeArea} options={[{ value: 'social', label: 'Social' }, { value: 'work', label: 'Work' }]} />
 

@@ -1,5 +1,6 @@
 import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useState } from 'react';
+import { ScreenSky } from '@/components/campus/ScreenSky';
 import { useCalendar } from '@/shared/adapters';
 import type { Clock } from '@/shared/types';
 import { useFocusedNow } from '../feed/hooks';
@@ -28,32 +29,35 @@ export function CalendarSettingsScreen({ clock }: { clock?: Clock } = {}) {
     Alert.alert('Disconnect Canvas?', body, [{ text: 'Cancel', style: 'cancel' }, { text: 'Disconnect', style: 'destructive', onPress: () => { run(); } }]);
   };
 
-  return <ScrollView style={{ backgroundColor: palette.page }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <CalendarStatus calendar={calendar} now={now} compact />
+  return <View style={{ flex: 1, backgroundColor: palette.background }}>
+    <ScreenSky />
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <CalendarStatus calendar={calendar} now={now} compact />
 
-    <Card>
-      <Txt variant="heading">Connection</Txt>
-      <Row label="Mode" value={live ? 'Live Canvas' : 'Sample calendar (fictional)'} />
-      <Row label="Status" value={statusLabel(calendar)} />
-      {live && calendar.account && <>
-        <Row label="Account" value={calendar.account.name} />
-        <Row label="School" value={calendar.account.origin} />
-        <Row label="Sync" value={lastSyncedLabel(calendar.lastSyncedAt, now)} />
-      </>}
-      <View style={styles.actions}>
-        {live && <Button tone="primary" icon="refresh" label="Sync now" busy={calendar.status === 'syncing'} disabled={isBusy(calendar)} onPress={() => { setMessage(null); calendar.sync(); }} />}
-        {live && <Button tone="danger" label="Disconnect" disabled={isBusy(calendar)} onPress={disconnect} />}
-        {!live && <Button label="Reload sample calendar" accessibilityHint="Loads fictional coursework for a no-network demo" onPress={() => { calendar.enterSampleMode(); setMessage('Sample calendar loaded. It contains fictional coursework only.'); }} />}
-      </View>
-      {message && <Txt variant="small" tone="secondary">{message}</Txt>}
-    </Card>
+      <Card>
+        <Txt variant="heading">Connection</Txt>
+        <Row label="Mode" value={live ? 'Live Canvas' : 'Sample calendar (fictional)'} />
+        <Row label="Status" value={statusLabel(calendar)} />
+        {live && calendar.account && <>
+          <Row label="Account" value={calendar.account.name} />
+          <Row label="School" value={calendar.account.origin} />
+          <Row label="Sync" value={lastSyncedLabel(calendar.lastSyncedAt, now)} />
+        </>}
+        <View style={styles.actions}>
+          {live && <Button tone="primary" icon="refresh" label="Sync now" busy={calendar.status === 'syncing'} disabled={isBusy(calendar)} onPress={() => { setMessage(null); calendar.sync(); }} />}
+          {live && <Button tone="danger" label="Disconnect" disabled={isBusy(calendar)} onPress={disconnect} />}
+          {!live && <Button label="Reload sample calendar" accessibilityHint="Loads fictional coursework for a no-network demo" onPress={() => { calendar.enterSampleMode(); setMessage('Sample calendar loaded. It contains fictional coursework only.'); }} />}
+        </View>
+        {message && <Txt variant="small" tone="secondary">{message}</Txt>}
+      </Card>
 
-    <CanvasConnectForm calendar={calendar} replacing={live} />
+      <CanvasConnectForm calendar={calendar} replacing={live} />
 
-    <Txt variant="caption" tone="secondary">
-      Your token is kept in this device’s secure storage and is never shown again, logged or shared. Grades and submissions are not read. Coursework is cached on this device so the calendar works offline.
-    </Txt>
-  </ScrollView>;
+      <Txt variant="caption" tone="secondary">
+        Your token is kept in this device’s secure storage and is never shown again, logged or shared. Grades and submissions are not read. Coursework is cached on this device so the calendar works offline.
+      </Txt>
+    </ScrollView>
+  </View>;
 }
 
 function Row({ label, value }: { label: string; value: string }) {

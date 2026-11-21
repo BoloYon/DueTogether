@@ -6,7 +6,6 @@ export function usePalette() {
     ...palette,
     accentText: palette.onAccent,
     liveSoft: palette.dangerSoft,
-    page: palette.background,
   };
 }
 

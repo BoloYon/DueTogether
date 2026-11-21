@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Avatar, Badge, Body, Button, Choices, EmptyState, MIN_TOUCH, Notice, Row, Screen, formatClock, formatDayLabel, dayKeyOf, useNow, usePalette,
 } from '@/components/campus';
+import { ScreenSky } from '@/components/campus/ScreenSky';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useCampus } from '@/shared/adapters';
 import { routes, type DetailParams } from '@/shared/navigation';
@@ -59,6 +60,7 @@ export function ChatScreen({ id }: DetailParams) {
   return (
     <KeyboardAvoidingView style={[styles.page, { backgroundColor: palette.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <ScreenSky />
       <Stack.Screen options={{ title: name }} />
       <ScrollView ref={scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
         onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
@@ -100,7 +102,7 @@ export function ChatScreen({ id }: DetailParams) {
         </View>
       </ScrollView>
 
-      <View style={[styles.composerWrap, { borderTopColor: palette.border, paddingBottom: Math.max(insets.bottom, Spacing.two) }]}>
+      <View style={[styles.composerWrap, { borderTopColor: palette.border, backgroundColor: palette.background, paddingBottom: Math.max(insets.bottom, Spacing.two) }]}>
         <View style={[styles.inner, { gap: Spacing.two }]}>
           {courses.length > 1 && (
             <Choices label="Course context" value={activeCourse} onChange={setCourse} options={courses.map(item => ({ value: item, label: item }))} />

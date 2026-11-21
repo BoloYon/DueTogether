@@ -24,7 +24,7 @@ const palette = {
   },
   dark: {
     text: '#F6EFFC',
-    background: '#121026',
+    background: '#0B0911',
     backgroundElement: '#221A36',
     backgroundSelected: '#39294E',
     textSecondary: '#C8BAD8',

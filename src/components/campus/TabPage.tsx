@@ -10,6 +10,7 @@ import { IconButton } from '@/features/feed/ui';
 import { useCampus } from '@/shared/adapters';
 import { routes } from '@/shared/navigation';
 import { usePalette } from './palette';
+import { ScreenSky } from './ScreenSky';
 
 type TabTitle = 'Feed' | 'Partners' | 'Projects' | 'Calendar' | 'Profile';
 type Props = Omit<ComponentProps<typeof ScrollView>, 'onScroll'> & { title: TabTitle; titleTrailing?: ReactNode };
@@ -27,7 +28,8 @@ export function TabPage({ title, titleTrailing, children, contentContainerStyle,
 
   return <SafeAreaView edges={Platform.OS === 'ios' ? ['top', 'left', 'right', 'bottom'] : ['top', 'left', 'right']}
     style={[styles.page, Platform.OS === 'web' && styles.webPage, { backgroundColor: palette.background }]}>
-    <View style={[styles.header, { backgroundColor: compactTitle ? palette.backgroundElement : palette.background, borderBottomColor: compactTitle ? palette.border : 'transparent' }]}>
+    <ScreenSky />
+    <View style={[styles.header, { backgroundColor: compactTitle ? palette.backgroundElement : 'transparent', borderBottomColor: compactTitle ? palette.border : 'transparent' }]}>
       <View pointerEvents="none" style={styles.center}>
         {compactTitle && <Text numberOfLines={1} style={[styles.compact, { color: palette.text }]}>{title}</Text>}
       </View>
