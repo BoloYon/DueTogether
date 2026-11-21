@@ -7,7 +7,7 @@ import { usePalette } from './palette';
 
 export type IconName =
   | 'chevron-down' | 'chevron-right' | 'chevron-left' | 'gear' | 'live' | 'clock' | 'pin' | 'globe'
-  | 'people' | 'book' | 'quiz' | 'exam' | 'event' | 'homework' | 'fit' | 'plus' | 'minus' | 'external' | 'refresh' | 'lock';
+  | 'bell' | 'bookmark' | 'bookmark-fill' | 'people' | 'book' | 'quiz' | 'exam' | 'event' | 'homework' | 'fit' | 'plus' | 'minus' | 'external' | 'refresh' | 'lock';
 
 export function Icon({ name, size = 18, color }: { name: IconName; size?: number; color: string }) {
   const stroke = { stroke: color, strokeWidth: 2, fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
@@ -28,6 +28,8 @@ export function Icon({ name, size = 18, color }: { name: IconName; size?: number
     case 'event': body = <><Rect x={4} y={5} width={16} height={15} rx={2} {...stroke} /><Path d="M4 10h16M8.5 3v4M15.5 3v4" {...stroke} /></>; break;
     case 'homework': body = <Path d="M14.5 4.5l5 5L9 20H4v-5zM12.5 6.5l5 5" {...stroke} />; break;
     case 'fit': body = <Path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" {...stroke} />; break;
+    case 'bell': body = <Path d="M5 17h14l-2-3V9a5 5 0 00-10 0v5l-2 3zm5 3h4" {...stroke} />; break;
+    case 'bookmark': case 'bookmark-fill': body = <Path d="M6 4h12v16l-6-4-6 4z" {...stroke} fill={name === 'bookmark-fill' ? color : 'none'} />; break;
     case 'plus': body = <Path d="M12 5v14M5 12h14" {...stroke} />; break;
     case 'minus': body = <Path d="M5 12h14" {...stroke} />; break;
     case 'external': body = <Path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5" {...stroke} />; break;
@@ -63,11 +65,12 @@ export function Button({ label, onPress, tone = 'secondary', icon, disabled, bus
 }
 
 /** Icon-only control with an accessible name and a 44 pt target. */
-export function IconButton({ icon, label, onPress, disabled, selected }: { icon: IconName; label: string; onPress: () => void; disabled?: boolean; selected?: boolean }) {
+export function IconButton({ icon, label, onPress, disabled, selected, dot }: { icon: IconName; label: string; onPress: () => void; disabled?: boolean; selected?: boolean; dot?: boolean }) {
   const palette = usePalette();
   return <Pressable accessibilityRole="button" accessibilityLabel={label} aria-disabled={!!disabled} aria-selected={selected} disabled={disabled} onPress={onPress}
     style={({ pressed }) => [styles.iconButton, { opacity: disabled ? 0.4 : pressed ? 0.6 : 1, backgroundColor: selected ? palette.accentSoft : 'transparent' }]}>
     <Icon name={icon} size={20} color={palette.accent} />
+    {dot && <View pointerEvents="none" style={{ position: 'absolute', right: 10, top: 9, width: 7, height: 7, borderRadius: 4, backgroundColor: palette.live }} />}
   </Pressable>;
 }
 

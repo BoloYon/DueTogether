@@ -82,7 +82,6 @@ export function PartnerPostRow({ post, actions, now }: { post: PartnerPost; acti
       {status.kind !== 'own' && <Button compact tone={status.kind === 'linked' ? 'secondary' : 'primary'}
         label={status.kind === 'linked' ? 'Message' : 'Connect'}
         accessibilityLabel={status.kind === 'linked' ? `Message ${author}` : `Connect with ${author} about ${post.title}`}
-        accessibilityHint={status.kind === 'known' ? 'Adds this post to your existing conversation' : status.kind === 'new' ? 'Starts a conversation' : undefined}
         onPress={() => actions.connect(post)} />}
     </View>
     <ErrorText message={actions.errors[post.id]} />

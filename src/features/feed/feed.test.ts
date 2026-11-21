@@ -70,6 +70,6 @@ test('project status uses shared memberships; a request is not a connection', ()
 
 test('time left label', () => {
   const live = seed().sessions[0];
-  assert.equal(timeLeftLabel(live, now), '1 h left');
-  assert.equal(timeLeftLabel(live, now + 35 * 60_000), '25 min left');
+  assert.equal(timeLeftLabel(live, now), '1h left');
+  assert.equal(timeLeftLabel(live, now + 35 * 60_000), '25m left');
 });

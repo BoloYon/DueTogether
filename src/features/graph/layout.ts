@@ -243,7 +243,7 @@ export function fitViewport(model: GraphModel, positions: Positions, width: numb
   const bounds = contentBounds(model, positions);
   const contentW = Math.max(1, bounds.right - bounds.left);
   const contentH = Math.max(1, bounds.bottom - bounds.top);
-  const scale = clamp(Math.min((width - padding * 2) / contentW, (height - padding * 2) / contentH), MIN_SCALE, 1.6);
+  const scale = clamp(Math.min((width - padding * 2) / contentW, (height - padding * 2) / contentH), 0.01, 1.6);
   return {
     scale,
     x: width / 2 - ((bounds.left + bounds.right) / 2) * scale,
@@ -257,7 +257,7 @@ export function toWorld(viewport: Viewport, point: Point): Point {
 
 /** Zoom around a focal point in stage coordinates. */
 export function zoomAt(viewport: Viewport, factor: number, focal: Point): Viewport {
-  const scale = clamp(viewport.scale * factor, MIN_SCALE, MAX_SCALE);
+  const scale = clamp(viewport.scale * factor, Math.min(MIN_SCALE, viewport.scale), MAX_SCALE);
   const ratio = scale / viewport.scale;
   return { scale, x: focal.x - (focal.x - viewport.x) * ratio, y: focal.y - (focal.y - viewport.y) * ratio };
 }

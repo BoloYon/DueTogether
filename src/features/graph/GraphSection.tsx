@@ -54,7 +54,7 @@ export function GraphSection({ sections, calendar, actions, now, memory, reduced
   const selectedNode = model.nodes.find(node => node.id === selected) ?? null;
 
   // Compact stage: shorter than wide on phones so the details below peek into view.
-  const height = Math.round(Math.max(240, Math.min(width * 0.82, window.height * 0.42)));
+  const height = Math.round(Math.max(190, Math.min(width * 0.68, window.height * 0.34)));
 
   return <View style={styles.wrap}>
     <UnderlineTabs active={active} sections={sections} onChange={setActive} />

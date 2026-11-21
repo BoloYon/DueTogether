@@ -35,18 +35,19 @@ function toneColors(palette: CampusPalette, tone: Tone) {
 
 /* ---------- Layout ---------- */
 
-export function Screen({ title, children, footer, scroll = true }: {
-  title?: string; children: ReactNode; footer?: ReactNode; scroll?: boolean;
+export function Screen({ title, children, footer, headerRight, scroll = true }: {
+  title?: string; children: ReactNode; footer?: ReactNode; headerRight?: () => ReactNode; scroll?: boolean;
 }) {
   const palette = usePalette();
   const insets = useSafeAreaInsets();
   const body = <View style={styles.inner}>{children}</View>;
   return (
     <View style={[styles.page, { backgroundColor: palette.background }]}>
-      {title !== undefined && <Stack.Screen options={{ title }} />}
+      {title !== undefined && <Stack.Screen options={{ title, headerRight }} />}
       {scroll ? (
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: Spacing.five + (footer ? 0 : insets.bottom) }]}
+          contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag">
           {body}
@@ -315,9 +316,9 @@ export function ErrorBanner({ message }: { message?: string | null }) {
 }
 
 /** Tappable list row with optional leading/trailing slots. */
-export function ListRow({ title, subtitle, meta, leading, trailing, onPress, accessibilityLabel, accessibilityHint }: {
+export function ListRow({ title, subtitle, meta, leading, trailing, onPress, accessibilityLabel, accessibilityHint, selected }: {
   title: string; subtitle?: string; meta?: string; leading?: ReactNode; trailing?: ReactNode;
-  onPress?: () => void; accessibilityLabel?: string; accessibilityHint?: string;
+  onPress?: () => void; accessibilityLabel?: string; accessibilityHint?: string; selected?: boolean;
 }) {
   const palette = usePalette();
   const content = (
@@ -336,6 +337,7 @@ export function ListRow({ title, subtitle, meta, leading, trailing, onPress, acc
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={selected === undefined ? undefined : { selected }}
       accessibilityLabel={accessibilityLabel ?? [title, subtitle, meta].filter(Boolean).join(', ')}
       accessibilityHint={accessibilityHint}
       onPress={onPress}

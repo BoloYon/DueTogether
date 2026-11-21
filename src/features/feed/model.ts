@@ -1,3 +1,4 @@
+import { formatAgo, formatDuration } from '@/components/campus/format';
 import { findThreadByPerson, selectFeedSections, sessionState } from '@/shared/selectors';
 import type { CampusState, CanvasItem, Id, PartnerPost, Project, StudySession, User } from '@/shared/types';
 import { formatClock, relativeDayLabel, dayKey } from '../calendar/model';
@@ -91,10 +92,7 @@ export function attendanceLabel(session: StudySession) {
 
 export function timeLeftLabel(session: StudySession, now: number) {
   const minutes = Math.max(0, Math.ceil((session.endsAt - now) / 60_000));
-  if (minutes < 60) return `${minutes} min left`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest ? `${hours} h ${rest} min left` : `${hours} h left`;
+  return formatDuration(minutes * 60_000) + ' left';
 }
 
 export function startsLabel(session: StudySession, now: number) {
@@ -107,12 +105,7 @@ export function shortDateLabel(time: number, now: number) {
 }
 
 export function ageLabel(createdAt: number, now: number) {
-  const minutes = Math.max(0, Math.floor((now - createdAt) / 60_000));
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  return `${Math.floor(hours / 24)} d ago`;
+  return formatAgo(createdAt, now);
 }
 
 export function courseOrTopic(entity: { course?: string; topic?: string; category?: string }) {

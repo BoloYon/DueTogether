@@ -1,5 +1,5 @@
 import { atMinute, dayKeyStart, parseTimeOfDay } from '@/components/campus/format';
-import { findThreadByPerson, normalizeCourse } from '@/shared/selectors';
+import { findAvailabilityOverlaps, findThreadByPerson, normalizeCourse } from '@/shared/selectors';
 import type { AvailabilityMatch, AvailabilityWindow, CampusState, Id, InviteDraft, PartnerPost, StudyInvite, User } from '@/shared/types';
 
 /** A personal connection exists only when there is a thread with that person. */
@@ -15,8 +15,8 @@ export function postsByAuthor(state: CampusState, authorId: Id) {
 export function connectState(state: CampusState, post: PartnerPost): { label: string; disabled: boolean; threadId?: Id } {
   if (post.authorId === state.currentUser.id) return { label: 'Your post', disabled: true };
   const threadId = state.postToThread[post.id];
-  if (threadId) return { label: 'Open chat', disabled: false, threadId };
-  return { label: isContact(state, post.authorId) ? 'Connect (adds to chat)' : 'Connect', disabled: false };
+  if (threadId) return { label: 'Message', disabled: false, threadId };
+  return { label: 'Connect', disabled: false };
 }
 
 function haystack(...parts: (string | undefined)[]) {
@@ -59,6 +59,25 @@ export function buildWindow(day: string, start: string, end: string, now: number
   if (endMinute <= startMinute) return { ok: false, field: 'end', error: 'End time must be after the start.' };
   if (atMinute(day, endMinute) <= now) return { ok: false, field: 'end', error: 'This window has already passed. Choose a later time.' };
   return { ok: true, window: { date: day, startMinute, endMinute } };
+}
+
+export function studyMatchWindows(state: CampusState, courses: string[], now: number) {
+  return courses.flatMap(course => myWindows(state, course)
+    .filter(window => atMinute(window.date, window.endMinute) > Math.floor(now / 60_000) * 60_000 + 60_000)
+    .map(window => ({ course, window })))
+    .sort((left, right) => left.window.date.localeCompare(right.window.date) || left.window.startMinute - right.window.startMinute);
+}
+
+export function studyMatches(state: CampusState, courses: string[], now: number) {
+  return courses.flatMap(course => findAvailabilityOverlaps(state, course, now))
+    .filter(match => atMinute(match.date, match.endMinute) > Math.floor(now / 60_000) * 60_000 + 60_000)
+    .sort((left, right) => left.date.localeCompare(right.date) || left.startMinute - right.startMinute);
+}
+
+export function availabilityError(window: AvailabilityWindow, now: number) {
+  if (atMinute(window.date, window.startMinute) <= now) return 'The start time has passed. Choose a later time.';
+  if (window.endMinute <= window.startMinute) return 'The end time must be after the start.';
+  return null;
 }
 
 export function windowPassed(window: AvailabilityWindow, now: number) {
