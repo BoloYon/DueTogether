@@ -1,1 +1,1 @@
-export { AvailabilityScreen as default } from '@/shared/baselineScreens';
+export { AvailabilityScreen as default } from '@/features/partners';

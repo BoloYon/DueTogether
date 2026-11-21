@@ -1,1 +1,1 @@
-export { InviteScreen as default } from '@/shared/baselineScreens';
+export { InviteScreen as default } from '@/features/partners';

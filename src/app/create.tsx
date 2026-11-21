@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { CreateScreen } from '@/shared/baselineScreens';
+import { CreateScreen } from '@/features/create';
 import type { CreateParams } from '@/shared/navigation';
 
 export default function Route() {
