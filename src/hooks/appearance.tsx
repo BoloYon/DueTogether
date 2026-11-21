@@ -1,7 +1,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react';
-import { Appearance, Platform, useColorScheme as useDeviceColorScheme } from 'react-native';
+import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type PropsWithChildren } from 'react';
+import { Appearance, Platform } from 'react-native';
 
 export const appearanceOptions = ['system', 'light', 'dark'] as const;
 export type AppearanceChoice = typeof appearanceOptions[number];
@@ -12,8 +12,16 @@ const AppearanceContext = createContext({
   select: (_choice: AppearanceChoice) => { void _choice; },
 });
 
+function subscribeToDeviceScheme(onChange: () => void) {
+  const subscription = Appearance.addChangeListener(onChange);
+  return () => subscription.remove();
+}
+
+// Keep SSR and hydration on the same scheme before reading the device.
+const getServerScheme = () => 'light' as const;
+
 export function AppearanceProvider({ children }: PropsWithChildren) {
-  const device = useDeviceColorScheme();
+  const device = useSyncExternalStore(subscribeToDeviceScheme, Appearance.getColorScheme, getServerScheme);
   const [choice, setChoice] = useState<AppearanceChoice>('system');
   const chosen = useRef(false);
   const writes = useRef(Promise.resolve());
