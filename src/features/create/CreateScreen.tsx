@@ -27,7 +27,7 @@ export function CreateScreen(params: CreateParams) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
       <Screen title="Create">
         <Segmented label="What to create" options={KIND_OPTIONS} value={kind} onChange={setKind} />
-        {prefilled && kind === 'session' && <Notice tone="accent">Draft prefilled from your calendar. Review the details before posting.</Notice>}
+        {prefilled && kind === 'session' && <Notice tone="accent">Draft prefilled. Review the time and place before creating the session.</Notice>}
         {kind === 'session' && <SessionFormView params={params} />}
         {kind === 'partner' && <PostFormView params={params} />}
         {kind === 'project' && <ProjectFormView params={params} />}

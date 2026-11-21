@@ -70,7 +70,7 @@ export function Section({ title, action, children, count }: {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text accessibilityRole="header" style={[styles.sectionTitle, { color: palette.text }]}>
+        <Text accessibilityRole="header" aria-level={2} style={[styles.sectionTitle, { color: palette.text }]}>
           {title}{count !== undefined ? <Text style={{ color: palette.textSecondary }}>{`  ${count}`}</Text> : null}
         </Text>
         {action}
@@ -143,6 +143,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, accessib
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!disabled }}
+      aria-disabled={!!disabled}
       disabled={disabled}
       onPress={onPress}
       hitSlop={compact ? 4 : 0}
@@ -212,6 +213,7 @@ export function Choices<T extends string>({ label, options, value, onChange, err
               accessibilityRole="radio"
               accessibilityLabel={option.accessibilityLabel ?? option.label}
               accessibilityState={{ checked: selected, selected }}
+              aria-checked={selected}
               onPress={() => onChange(option.value)}
               style={({ pressed }) => [
                 styles.chip,
@@ -246,6 +248,7 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
             accessibilityRole="tab"
             accessibilityLabel={option.accessibilityLabel ?? option.label}
             accessibilityState={{ selected }}
+            aria-selected={selected}
             onPress={() => onChange(option.value)}
             style={[styles.segment, selected && { backgroundColor: palette.accent }]}>
             <Text style={[styles.chipLabel, { color: selected ? palette.onAccent : palette.text }]}>{option.label}</Text>
