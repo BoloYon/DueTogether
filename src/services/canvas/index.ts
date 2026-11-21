@@ -3,7 +3,7 @@ import type {
   DateRange, RawCanvasCourse, RawCanvasPlannerItem, RawCanvasUser,
 } from '../../shared/types';
 import { canvasFetch } from './fetch';
-import { canvasOrigin, sameOriginUrl } from './urls';
+import { canvasOrigin, hasCredentialQuery, sameOriginUrl } from './urls';
 
 type Fetch = (url: string, init: RequestInit) => Promise<Pick<Response, 'status' | 'ok' | 'headers' | 'json' | 'redirected' | 'type' | 'url'>>;
 type Guard<T> = (value: unknown) => value is T;
@@ -93,7 +93,7 @@ export function createCanvasTransport({ fetch: request = canvasFetch, timeoutMs 
     async function get(path: string) {
       if (stopped) throw stopped;
       const url = sameOriginUrl(path, origin, origin);
-      if (!url || url.hash || url.searchParams.has('access_token')) throw unsafeUrl;
+      if (!url || url.hash || hasCredentialQuery(url)) throw unsafeUrl;
       const response = await request(url.href, {
         method: 'GET', redirect: 'manual', credentials: 'omit',
         headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },

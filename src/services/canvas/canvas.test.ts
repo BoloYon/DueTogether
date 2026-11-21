@@ -42,6 +42,8 @@ test('Canvas read verifies identity before paginating courses and querying the p
 test('Canvas transport rejects credentialed origins, foreign next links, and redirects', async () => {
   for (const response of [
     Response.json([], { headers: { Link: '<https://other.example.test/items>; rel="next"' } }),
+    Response.json([], { headers: { Link: '<blob:https://canvas.example.test/fixture>; rel="next"' } }),
+    Response.json([], { headers: { Link: '<?Access_Token=mock-credential>; rel="next"' } }),
     Response.redirect('https://other.example.test/items'),
   ]) {
     let requests = 0;

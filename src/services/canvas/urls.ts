@@ -13,8 +13,12 @@ export function canvasOrigin(input: string): string | undefined {
 export function sameOriginUrl(input: string, base: string, origin: string): URL | undefined {
   try {
     const url = new URL(input, base);
-    if (url.origin === origin && !url.username && !url.password) return url;
+    if (url.protocol === 'https:' && url.origin === origin && !url.username && !url.password) return url;
   } catch {
     // Malformed links are never followed.
   }
+}
+
+export function hasCredentialQuery(url: URL): boolean {
+  return Array.from(url.searchParams.keys()).some(key => /^(access_token|token|authorization)$/i.test(key));
 }

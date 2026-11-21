@@ -1,6 +1,6 @@
 import type { CanvasAccount, CanvasItem, CanvasRead, RawCanvasPlannerItem } from '../../shared/types';
 import { isCanvasId, isRecord } from './index';
-import { sameOriginUrl } from './urls';
+import { hasCredentialQuery, sameOriginUrl } from './urls';
 
 export function accountKey(origin: string, id: string) {
   return origin + '/' + encodeURIComponent(id);
@@ -22,7 +22,7 @@ export function itemUrl(value: unknown, origin: string): string | undefined {
   if (typeof value !== 'string' || !value.trim()) return;
   const url = sameOriginUrl(value, origin, origin);
   if (url && !/(?:[?&#])(?:access_token|token|authorization)=/i.test(url.href) &&
-      !Array.from(url.searchParams.keys()).some(key => /^(access_token|token|authorization)$/i.test(key))) return url.href;
+      !hasCredentialQuery(url)) return url.href;
 }
 
 const lockdownNote = /\b(?:Respondus(?:\s+Lock\s*Down\s+Browser)?|Lock\s*Down\s+Browser)\b/i;
@@ -61,7 +61,7 @@ export function translateCanvas(read: CanvasRead, origin: string): { account: Ca
 
     const plannerDate = timestamp(row.plannable_date);
     const studentDue = timestamp(raw.user_due_date) ?? timestamp(raw.cached_due_date);
-    const dueDate = event ? undefined : plannerDate ?? studentDue ?? timestamp(raw.due_at);
+    const dueDate = event ? undefined : studentDue ?? plannerDate ?? timestamp(raw.due_at);
     const startsAt = event ? timestamp(raw.start_at) ?? (raw.start_at === undefined ? plannerDate : undefined) : undefined;
     const endsAt = event ? timestamp(raw.end_at) : undefined;
     const allDayDate = dateOnly(raw.all_day_date) ?? (raw.all_day === true
@@ -69,7 +69,7 @@ export function translateCanvas(read: CanvasRead, origin: string): { account: Ca
       : undefined);
     if (!dueDate && !startsAt && !endsAt && !allDayDate) continue;
 
-    const datePriority = studentDue || (plannerDate && plannerDate !== timestamp(raw.due_at)) ? 1 : 0;
+    const datePriority = studentDue ? 2 : plannerDate && plannerDate !== timestamp(raw.due_at) ? 1 : 0;
     const previous = items.get(id);
     if (previous && previous.datePriority > datePriority) continue;
     const contextName = isRecord(row.context) && typeof row.context.name === 'string' ? row.context.name : undefined;
