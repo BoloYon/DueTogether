@@ -1,0 +1,1 @@
+export { CampusProvider } from './provider';
