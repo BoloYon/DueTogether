@@ -91,7 +91,7 @@ export function CalendarScreen({ clock }: { clock?: Clock } = {}) {
 
   const noItems = calendar.items.length === 0;
 
-  return <TabPage title="Calendar" style={{ backgroundColor: palette.page }} contentContainerStyle={styles.content}
+  return <TabPage title="Calendar" contentContainerStyle={styles.content}
     refreshControl={calendar.mode === 'live' ? <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.accent} /> : undefined}>
     <View style={styles.headerRow}>
       <Txt variant="small" tone="secondary" style={styles.flex}>Only you can see your coursework here.</Txt>

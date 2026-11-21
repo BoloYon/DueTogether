@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { initialsOf } from './format';
 import { usePalette, type CampusPalette } from './palette';
+import { ScreenSky } from './ScreenSky';
 
 export const MIN_TOUCH = 44;
 
@@ -43,6 +44,7 @@ export function Screen({ title, children, footer, headerRight, scroll = true }: 
   const body = <View style={styles.inner}>{children}</View>;
   return (
     <View style={[styles.page, { backgroundColor: palette.background }]}>
+      <ScreenSky />
       {title !== undefined && <Stack.Screen options={{ title, headerRight }} />}
       {scroll ? (
         <ScrollView

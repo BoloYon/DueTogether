@@ -6,6 +6,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Body, Button, ErrorBanner, Row } from '@/components/campus';
+import { ScreenSky } from '@/components/campus/ScreenSky';
 import { usePalette } from '@/components/campus/palette';
 import { useCampus } from '@/shared/adapters';
 import type { StudyGuide } from '@/shared/types';
@@ -53,6 +54,7 @@ export function GuidePreview({ collectionId, guideId }: { collectionId: string; 
 
   return (
     <View style={{ flex: 1, paddingBottom: insets.bottom, backgroundColor: palette.background }}>
+      <ScreenSky />
       <Stack.Screen options={{ title: guide?.title ?? 'Study guide' }} />
       {guide && collection ? (
         <>
