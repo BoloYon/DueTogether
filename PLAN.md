@@ -24,13 +24,15 @@ Each entry below is a named React component export, with no required props unles
 | --- | --- | --- |
 | / | feed | FeedScreen |
 | /partners | partners | PartnersScreen |
+| /messages | chat | MessagesScreen |
 | /projects | projects | ProjectsScreen |
 | /calendar | calendar | CalendarScreen |
-| /profile | profile | ProfileScreen |
+| /profile | profile | ProfileScreen (opened from the tab headers) |
 | /create | create | CreateScreen(props: CreateParams) |
 | /session/[id] | sessions | SessionScreen(props: DetailParams) |
+| /post/[id] | partners | PostScreen(props: DetailParams) |
 | /person/[id] | partners | PersonScreen(props: DetailParams) |
-| /chat/[id] | chat | ChatScreen(props: DetailParams) |
+| /chat/[id] | chat | ChatScreen(props: ChatParams) |
 | /project/[id] | projects | ProjectScreen(props: DetailParams) |
 | /calendar/settings | calendar | CalendarSettingsScreen |
 | /partners/find | partners | PartnerFindScreen |

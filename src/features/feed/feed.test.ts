@@ -3,7 +3,7 @@ import test from 'node:test';
 import { transitionCampus } from '@/shared/mockCampus';
 import { makeCampusFixtures, makeCanvasFixtures } from '@/shared/mockData';
 import {
-  feedSections, initialGraphSection, isKnownContact, postStatus, projectStatus, SECTION_ORDER, SECTION_TITLES, timeLeftLabel,
+  feedSections, initialGraphSection, isKnownContact, postStatus, projectStatus, SECTION_ORDER, SECTION_TITLES, timeLeftLabel, workFeedContent,
 } from './model';
 
 const now = new Date(2026, 10, 21, 12).getTime();
@@ -72,4 +72,29 @@ test('time left label', () => {
   const live = seed().sessions[0];
   assert.equal(timeLeftLabel(live, now), '1h left');
   assert.equal(timeLeftLabel(live, now + 35 * 60_000), '25m left');
+});
+
+test('Your posts combines authored Feed items in time order and hide applies to both views', () => {
+  const state = seed();
+  const me = state.currentUser.id;
+  const live = state.sessions[0];
+  const project = state.projects[0];
+  state.sessions[0] = { ...live, hostId: me, createdAt: now - 300 };
+  state.projects[0] = { ...project, ownerId: me, createdAt: now - 200 };
+  state.posts.push(
+    { id: 'mine-a', title: 'Course request', description: 'Review practice problems', authorId: me, course: 'MAT 240', createdAt: now - 100 },
+    { id: 'mine-b', title: 'Personal request', description: 'Find a collaborator', authorId: me, topic: 'Portfolio', createdAt: now },
+  );
+  const visible = workFeedContent(state, [], now);
+  assert.deepEqual(visible.ownPosts.map(item => item.post.id), ['mine-b', 'mine-a', project.id, live.id]);
+  assert.ok(!visible.list.happeningNow.some(session => session.id === live.id));
+  assert.ok(!visible.list.newProjects.some(item => item.id === project.id));
+  assert.ok(visible.list.partnersWanted.every(post => post.authorId !== me));
+  assert.ok(visible.graph.partnersWanted.some(post => post.id === 'mine-a'));
+  const hidden = workFeedContent({ ...state, hideMyPosts: true }, [], now);
+  assert.deepEqual(hidden.ownPosts, []);
+  assert.deepEqual(hidden.graph, visible.list);
+  assert.equal(state.posts.filter(post => post.authorId === me).length, 2);
+  state.posts = state.posts.filter(post => post.id !== 'mine-b');
+  assert.equal(workFeedContent(state, [], now).ownPosts[0].post.id, 'mine-a');
 });

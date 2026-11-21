@@ -1,8 +1,9 @@
-import { TabPage } from '@/components/campus/TabPage';
+import { ManagePostMenu } from '@/components/campus/ManagePostMenu';
+import { IconButton } from '@/features/feed/ui';
 import { appearanceOptions, useAppearance } from '@/hooks/appearance';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Switch, View } from 'react-native';
 
 import {
   Avatar, Badge, Body, Button, Card, ErrorBanner, ListRow, Notice, Row, Screen, Section, TextField, Title, formatWhen, useNow,
@@ -20,13 +21,15 @@ function SessionRows({ sessions, empty }: { sessions: StudySession[]; empty: str
   if (!sessions.length) return <Body secondary>{empty}</Body>;
   return sessions.map(session => {
     const view = describeSession(session, state, now);
-    return (
-      <ListRow key={session.id} title={session.title}
+    const row = <ListRow key={session.id} title={session.title}
         subtitle={`${view.subject} · ${formatWhen(session.startsAt, now)}`}
         meta={view.placeText}
         trailing={<Badge label={view.phaseLabel} tone={view.phase === 'live' ? 'live' : view.phase === 'ended' ? 'neutral' : 'accent'} />}
-        onPress={() => router.push(routes.session(session.id))} accessibilityHint="Opens session" />
-    );
+        onPress={() => router.push(routes.session(session.id))} accessibilityHint="Opens session" />;
+    return view.hosting ? <Row key={session.id}>
+      <View style={{ flex: 1 }}>{row}</View>
+      <ManagePostMenu kind="session" id={session.id} />
+    </Row> : row;
   });
 }
 
@@ -37,7 +40,7 @@ export function ProfileScreen() {
   const user = state.currentUser;
   const sections = profileSections(state, now);
   return (
-    <TabPage title="Profile" contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <Screen title="Profile" headerRight={() => <IconButton icon="gear" label="Profile settings" onPress={() => router.push(routes.profileSettings)} />}>
       <Row>
         <Avatar name={user.name} initials={user.initials} size={64} />
         <View style={{ flex: 1, gap: 2 }}>
@@ -62,6 +65,10 @@ export function ProfileScreen() {
             <Badge label={post.course ?? post.topic ?? 'General'} tone="accent" />
             <Body bold>{post.title}</Body>
             <Body secondary>{post.description}</Body>
+            <Row>
+              <Button compact variant="ghost" label="View post" onPress={() => router.push(routes.post(post.id))} />
+              <ManagePostMenu kind="request" id={post.id} />
+            </Row>
           </Card>
         )) : <Body secondary>No partner posts yet.</Body>}
       </Section>
@@ -80,7 +87,7 @@ export function ProfileScreen() {
         )) : <Body secondary>You are not on a project team yet.</Body>}
       </Section>
       <ResetDemoData />
-    </TabPage>
+    </Screen>
   );
 }
 
@@ -121,6 +128,7 @@ function ResetDemoData() {
 
 export function ProfileSettingsScreen() {
   const { choice, select } = useAppearance();
+  const { state, dispatch } = useCampus();
   return <Screen title="Profile settings">
     <Section title="Appearance">
       <Card>
@@ -128,6 +136,15 @@ export function ProfileSettingsScreen() {
           title={option[0].toUpperCase() + option.slice(1)}
           selected={choice === option}
           trailing={choice === option ? <Body bold>✓</Body> : undefined} onPress={() => select(option)} />)}
+      </Card>
+    </Section>
+    <Section title="Work Feed">
+      <Card>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <Body>Hide my posts</Body>
+          <Switch accessibilityLabel="Hide my posts" value={state.hideMyPosts === true}
+            onValueChange={hidden => { dispatch({ type: 'feed/hideMyPosts', hidden }); }} />
+        </Row>
       </Card>
     </Section>
     <ProfileForm />
@@ -138,6 +155,7 @@ function ProfileForm() {
   const { state, dispatch } = useCampus();
   const [name, setName] = useState(state.currentUser.name);
   const [major, setMajor] = useState(state.currentUser.major ?? '');
+  const [courses, setCourses] = useState(state.currentUser.courses.join(', '));
   const [fieldError, setFieldError] = useState<{ field: 'name' | 'major'; error: string } | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -145,7 +163,7 @@ function ProfileForm() {
   const save = () => {
     const checked = validateProfile(name, major);
     if (!checked.ok) { setFieldError(checked); setSaved(false); return; }
-    const result = dispatch({ type: 'profile/update', profile: checked.profile });
+    const result = dispatch({ type: 'profile/update', profile: { ...checked.profile, courses: courses.split(',') } });
     if (!result.ok) { setFailure(result.message); setSaved(false); return; }
     setFieldError(null);
     setFailure(null);
@@ -159,6 +177,8 @@ function ProfileForm() {
         error={fieldError?.field === 'name' ? fieldError.error : undefined} autoCapitalize="words" />
       <TextField label="Major (optional)" value={major} onChangeText={value => { setMajor(value); setSaved(false); }} maxLength={MAJOR_MAX + 10}
         error={fieldError?.field === 'major' ? fieldError.error : undefined} />
+      <TextField label="Course codes" value={courses} onChangeText={value => { setCourses(value); setSaved(false); }}
+        hint="Separate course codes with commas" placeholder="MAT 240, PHY 220" autoCapitalize="characters" />
       <ErrorBanner message={failure} />
       {saved && <Notice tone="success">Profile saved.</Notice>}
       <Button label="Save profile" onPress={save} />

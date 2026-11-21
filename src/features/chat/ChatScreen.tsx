@@ -1,35 +1,40 @@
-import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { Stack, useIsFocused, useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  Avatar, Badge, Body, Button, Choices, EmptyState, MIN_TOUCH, Notice, Row, Screen, formatClock, formatDayLabel, dayKeyOf, useNow, usePalette,
+  Avatar, Badge, Body, Button, EmptyState, MIN_TOUCH, Notice, Row, Screen, formatClock, formatDayLabel, dayKeyOf, useNow, usePalette,
 } from '@/components/campus';
+import { FilterChip } from '@/features/feed/ui';
+import { normalizeCourse } from '@/shared/selectors';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useCampus } from '@/shared/adapters';
-import { routes, type DetailParams } from '@/shared/navigation';
+import { routes, type ChatParams } from '@/shared/navigation';
 import type { Message } from '@/shared/types';
-import { MESSAGE_MAX, composerCourses, threadContexts, unreadCount, validateMessage } from './logic';
+import { ConversationMenu, ConversationOptionsButton } from './ConversationMenu';
+import { MESSAGE_MAX, composerCourses, matchesChatCourse, threadContexts, unreadCount, validateMessage } from './logic';
 
-export function ChatScreen({ id }: DetailParams) {
+export function ChatScreen({ id, course: initialCourse }: ChatParams) {
   const { state, dispatch } = useCampus();
   const router = useRouter();
   const palette = usePalette();
   const insets = useSafeAreaInsets();
   const now = useNow(30_000);
   const scroll = useRef<ScrollViewInstance>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const thread = state.threads.find(item => item.id === id);
   const courses = thread ? composerCourses(state, thread) : [];
-  const [course, setCourse] = useState<string | undefined>(() => courses.at(-1));
+  const [course, setCourse] = useState<string | undefined>(() => initialCourse ? normalizeCourse(initialCourse) : undefined);
   const unread = thread ? unreadCount(thread) : 0;
 
   // Mark read while the conversation is on screen, including replies that land while open.
-  useFocusEffect(useCallback(() => {
-    if (thread && unread > 0) dispatch({ type: 'chat/read', threadId: thread.id });
-  }, [dispatch, thread, unread]));
+  const focused = useIsFocused();
+  useEffect(() => {
+    if (focused && unread > 0) dispatch({ type: 'chat/read', threadId: id });
+  }, [dispatch, focused, id, unread]);
 
   if (!thread) {
     return (
@@ -43,7 +48,8 @@ export function ChatScreen({ id }: DetailParams) {
   const person = state.people.find(item => item.id === thread.personId);
   const name = person?.name ?? 'Classmate';
   const contexts = threadContexts(state, thread);
-  const activeCourse = course && courses.includes(course) ? course : courses.at(-1);
+  const activeCourse = course && courses.includes(course) ? course : undefined;
+  const messages = thread.messages.filter(message => matchesChatCourse(message.course, activeCourse));
 
   const send = () => {
     const problem = validateMessage(text);
@@ -59,7 +65,8 @@ export function ChatScreen({ id }: DetailParams) {
   return (
     <KeyboardAvoidingView style={[styles.page, { backgroundColor: palette.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
-      <Stack.Screen options={{ title: name }} />
+      <Stack.Screen options={{ title: name, headerRight: () => <ConversationOptionsButton name={name} expanded={menuOpen} onPress={() => setMenuOpen(true)} /> }} />
+      {menuOpen && <ConversationMenu thread={thread} name={name} onClose={() => setMenuOpen(false)} onDelete={() => router.dismissTo(routes.messages)} />}
       <ScrollView ref={scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
         onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
         <View style={styles.inner}>
@@ -81,9 +88,9 @@ export function ChatScreen({ id }: DetailParams) {
           )}
           <Notice tone="neutral">Sample conversation with a fictional classmate. Replies are simulated on this device.</Notice>
 
-          {thread.messages.map((message, index) => {
+          {messages.map((message, index) => {
             const day = dayKeyOf(message.sentAt);
-            const previous = thread.messages[index - 1];
+            const previous = messages[index - 1];
             const divider = !previous || dayKeyOf(previous.sentAt) !== day ? formatDayLabel(day, now) : null;
             return (
               <View key={message.id} style={{ gap: Spacing.two }}>
@@ -92,7 +99,7 @@ export function ChatScreen({ id }: DetailParams) {
               </View>
             );
           })}
-          {thread.pendingReply && (
+          {thread.pendingReply && matchesChatCourse(thread.pendingReply.course, activeCourse) && (
             <View accessibilityLiveRegion="polite" style={[styles.bubble, styles.left, { backgroundColor: palette.bubbleIn }]}>
               <Text style={{ color: palette.textSecondary, fontStyle: 'italic' }}>{name} is typing…</Text>
             </View>
@@ -102,10 +109,12 @@ export function ChatScreen({ id }: DetailParams) {
 
       <View style={[styles.composerWrap, { borderTopColor: palette.border, paddingBottom: Math.max(insets.bottom, Spacing.two) }]}>
         <View style={[styles.inner, { gap: Spacing.two }]}>
-          {courses.length > 1 && (
-            <Choices label="Course context" value={activeCourse} onChange={setCourse} options={courses.map(item => ({ value: item, label: item }))} />
-          )}
           {error && <Text accessibilityLiveRegion="polite" style={{ color: palette.danger }}>{error}</Text>}
+          {courses.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false}
+            accessibilityLabel="Course context" keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: Spacing.two }}>
+            {courses.map(item => <FilterChip key={item} label={item} selected={activeCourse === item}
+              onPress={() => setCourse(current => current === item ? undefined : item)} />)}
+          </ScrollView>}
           <View style={styles.composer}>
             <TextInput
               accessibilityLabel={`Message ${name}`}

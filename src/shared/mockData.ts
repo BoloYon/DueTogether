@@ -6,6 +6,21 @@ export function localDayKey(date: Date): string {
   return [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join('-');
 }
 
+const additionalStudyRequests = [
+  { id: 'demo-mat240-eigenvectors', authorId: 'dev', course: 'MAT 240', title: 'Check eigenvectors by hand', description: 'Work two practice matrices and compare how we check each eigenvector.' },
+  { id: 'demo-phy220-standing-waves', authorId: 'noa', course: 'PHY 220', title: 'Sketch standing-wave modes', description: 'Draw the first three modes for a string and compare where the nodes land.' },
+];
+
+export function addDemoStudyRequests(state: CampusState, now: number): CampusState {
+  if (state.currentUser.id !== 'you') return state;
+  const missing = additionalStudyRequests.filter(request =>
+    state.people.some(person => person.id === request.authorId) && !state.posts.some(post => post.id === request.id));
+  if (!missing.length) return state;
+  return { ...state, posts: [...state.posts, ...missing.map((request, index) => ({
+    ...request, createdAt: now - (4 + index) * 3_600_000,
+  }))] };
+}
+
 export function makeCampusFixtures(clock: Clock = Date.now): CampusState {
   const now = clock();
   const hour = 3_600_000;
@@ -19,7 +34,7 @@ export function makeCampusFixtures(clock: Clock = Date.now): CampusState {
     { id: 'dev', name: 'Dev Rowan', courses: [course, 'PHY 220'] },
     { id: 'noa', name: 'Noa Flint', courses: ['PHY 220'] },
   ];
-  return {
+  return addDemoStudyRequests({
     currentUser, people,
     sessions: [
       { id: 'live', title: 'Matrix problem lab', course, hostId: 'mira', attendeeIds: ['mira', 'dev'], startsAt: now - hour / 2, endsAt: now + hour, createdAt: now - 24 * hour, location: 'Juniper Study Loft', capacity: 6 },
@@ -47,7 +62,7 @@ export function makeCampusFixtures(clock: Clock = Date.now): CampusState {
     },
     invites: [],
     notifications: [{ id: 'welcome', title: 'Sample workspace', body: 'Explore with fictional classmates.', createdAt: now - hour, read: false, href: '/partners' }],
-  };
+  }, now);
 }
 
 export function makeCanvasFixtures(clock: Clock = Date.now): CanvasItem[] {

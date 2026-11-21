@@ -1,5 +1,7 @@
+import { ManagePostMenu } from '@/components/campus/ManagePostMenu';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { ConnectionNotice, useConnectionNotice, type ConnectionConfirmation } from '@/features/chat/ConnectionNotice';
 
 import {
   Avatar, Badge, Body, Button, Card, ErrorBanner, ListRow, Row, formatAgo, formatDayLabel, formatMinuteOfDay, formatTimeRange, formatClock, formatWhen, useNow,
@@ -10,20 +12,21 @@ import type { AvailabilityMatch, PartnerPost, StudyInvite, User } from '@/shared
 import { connectState, inviteDraftFromMatch, inviteForMatch, isContact } from './logic';
 
 /** Partner post with author and Connect, which opens or reuses the author's chat. */
-export function PostCard({ post, showAuthor = true }: { post: PartnerPost; showAuthor?: boolean }) {
+export function PostCard({ post, showAuthor = true, detail = false, onConnected }: { post: PartnerPost; showAuthor?: boolean; detail?: boolean; onConnected?: (confirmation: ConnectionConfirmation) => void }) {
   const { state, dispatch } = useCampus();
   const router = useRouter();
   const now = useNow(60_000);
   const [error, setError] = useState<string | null>(null);
   const author = state.people.find(person => person.id === post.authorId);
+  const notice = useConnectionNotice();
   const connect = connectState(state, post);
   const known = isContact(state, post.authorId);
   const onConnect = () => {
-    if (connect.threadId) { router.push(routes.chat(connect.threadId)); return; }
+    if (connect.threadId) { router.push(routes.chat(connect.threadId, post.course)); return; }
     const result = dispatch({ type: 'post/connect', postId: post.id });
     if (!result.ok) { setError(result.message); return; }
     setError(null);
-    if (result.id) router.push(routes.chat(result.id));
+    if (result.id) (onConnected ?? notice.show)({ id: result.id, course: post.course, reused: known });
   };
   return (
     <Card>
@@ -43,8 +46,12 @@ export function PostCard({ post, showAuthor = true }: { post: PartnerPost; showA
         />
       )}
       <ErrorBanner message={error} />
-      <Button label={connect.label} variant={connect.threadId ? 'secondary' : 'primary'} disabled={connect.disabled} onPress={onConnect}
-        accessibilityLabel={`${connect.label} with ${author?.name ?? 'author'} about ${post.title}`} />
+      {notice.confirmation && <ConnectionNotice confirmation={notice.confirmation} onDismiss={notice.dismiss} />}
+      {post.authorId === state.currentUser.id ? <Row>
+        {!detail && <Button compact variant="ghost" label="View post" onPress={() => router.push(routes.post(post.id))} />}
+        <ManagePostMenu kind="request" id={post.id} />
+      </Row> : <Button label={connect.label} variant={connect.threadId ? 'secondary' : 'primary'} disabled={connect.disabled} onPress={onConnect}
+        accessibilityLabel={`${connect.label} with ${author?.name ?? 'author'} about ${post.title}`} />}
     </Card>
   );
 }

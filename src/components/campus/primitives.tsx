@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { SectionToggle } from './SectionToggle';
 import { initialsOf } from './format';
 import { usePalette, type CampusPalette } from './palette';
 
@@ -64,19 +65,23 @@ export function Screen({ title, children, footer, headerRight, scroll = true }: 
   );
 }
 
-export function Section({ title, action, children, count }: {
+export function Section({ title, action, children, count, collapse }: {
   title: string; action?: ReactNode; children: ReactNode; count?: number;
+  collapse?: { expanded: boolean; onToggle: () => void };
 }) {
   const palette = usePalette();
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text accessibilityRole="header" aria-level={2} style={[styles.sectionTitle, { color: palette.text }]}>
+        {collapse ? <SectionToggle label={title} expanded={collapse.expanded} onPress={collapse.onToggle}
+          style={styles.sectionToggle} color={palette.textSecondary}>
+          <Text style={[styles.sectionTitle, { color: palette.text }]}>{title}{count !== undefined && <Text style={{ color: palette.textSecondary }}>{`  ${count}`}</Text>}</Text>
+        </SectionToggle> : <Text accessibilityRole="header" aria-level={2} style={[styles.sectionTitle, { color: palette.text }]}>
           {title}{count !== undefined ? <Text style={{ color: palette.textSecondary }}>{`  ${count}`}</Text> : null}
-        </Text>
+        </Text>}
         {action}
       </View>
-      <View style={styles.sectionBody}>{children}</View>
+      {collapse?.expanded !== false && <View style={styles.sectionBody}>{children}</View>}
     </View>
   );
 }
@@ -354,6 +359,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: Spacing.three, paddingTop: Spacing.two, alignItems: 'center' },
   section: { gap: Spacing.two },
+  sectionToggle: { flex: 1, minHeight: MIN_TOUCH, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, minHeight: MIN_TOUCH },
   sectionTitle: { fontSize: 20, lineHeight: 26, fontWeight: '700', flexShrink: 1 },
   sectionBody: { gap: Spacing.two },

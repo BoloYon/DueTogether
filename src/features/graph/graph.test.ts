@@ -108,8 +108,8 @@ test('fit view contains every outer label inside the measured stage; hit testing
   assert.ok(bounds.right * viewport.scale + viewport.x <= 320);
   assert.ok(bounds.top * viewport.scale + viewport.y >= 0);
   assert.ok(bounds.bottom * viewport.scale + viewport.y <= 142);
-  const target = positions['post:mira-1'];
-  assert.equal(hitTest(model, positions, viewport, { x: target.x * viewport.scale + viewport.x, y: target.y * viewport.scale + viewport.y }), 'post:mira-1');
+  const target = positions['post:mira-2'];
+  assert.equal(hitTest(model, positions, viewport, { x: target.x * viewport.scale + viewport.x, y: target.y * viewport.scale + viewport.y }), 'post:mira-2');
   assert.equal(hitTest(model, positions, viewport, { x: -500, y: -500 }), null);
 });
 

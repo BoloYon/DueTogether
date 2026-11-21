@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { SectionToggle } from '@/components/campus/SectionToggle';
 import { routes } from '@/shared/navigation';
 import type { CalendarAdapter } from '@/shared/types';
 import { CanvasItemRow } from '../calendar/CanvasItemRow';
@@ -9,7 +10,7 @@ import { SECTION_ORDER, SECTION_TITLES, type FeedSections, type SectionKey } fro
 import { usePalette } from './palette';
 import { Reveal } from './Reveal';
 import { FeaturedLiveSession, PartnerPostRow, ProjectRow, SessionRow } from './rows';
-import { Button, EmptyState, Icon, Tag, Txt } from './ui';
+import { Button, EmptyState, Tag, Txt } from './ui';
 
 
 export type ExpandedOverrides = Partial<Record<SectionKey, boolean>>;
@@ -64,13 +65,12 @@ export function FeedList({ sections, actions, now, calendar, overrides, onToggle
 
 function SectionHeader({ title, count, expanded, onPress, badge }: { title: string; count: number; expanded: boolean; onPress: () => void; badge?: ReactNode }) {
   const palette = usePalette();
-  return <Pressable accessibilityRole="button" aria-expanded={expanded} accessibilityLabel={`${title}, ${count} ${count === 1 ? 'item' : 'items'}`}
-    accessibilityHint={expanded ? 'Collapses the section' : 'Expands the section'} onPress={onPress} style={styles.header}>
-    <Icon name={expanded ? 'chevron-down' : 'chevron-right'} size={18} color={palette.textSecondary} />
+  return <SectionToggle label={`${title}, ${count} ${count === 1 ? 'item' : 'items'}`} expanded={expanded}
+    onPress={onPress} style={styles.header} color={palette.textSecondary}>
     <Txt variant="heading">{title}</Txt>
     <View style={[styles.count, { backgroundColor: palette.backgroundElement }]}><Txt variant="caption" tone="secondary" style={styles.countText}>{String(count)}</Txt></View>
     {badge ? <View style={styles.badge}>{badge}</View> : null}
-  </Pressable>;
+  </SectionToggle>;
 }
 
 const styles = StyleSheet.create({

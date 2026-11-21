@@ -40,18 +40,21 @@ export interface StudySession {
   description?: string;
 }
 export interface PartnerPost { id: Id; authorId: Id; course?: string; topic?: string; title: string; description: string; createdAt: EpochMillis }
+export type LinkedPostContext = Pick<PartnerPost, 'title' | 'course' | 'topic'>;
 export interface Project { id: Id; title: string; pitch: string; ownerId: Id; teamIds: Id[]; openRoles: string[]; capacity: number; course?: string; category?: string; createdAt: EpochMillis }
 export interface Membership { userId: Id; projectId: Id; status: 'requested' | 'member' }
 export interface Message { id: Id; authorId: Id; text: string; sentAt: EpochMillis; course?: string }
-export interface Thread { id: Id; personId: Id; postIds: Id[]; messages: Message[]; readAt?: EpochMillis; pendingReply?: { id: Id; text: string; dueAt: EpochMillis; course?: string } }
+export interface Thread { id: Id; personId: Id; postIds: Id[]; deletedPostContexts?: Record<Id, LinkedPostContext>; messages: Message[]; pinned?: boolean; readAt?: EpochMillis; pendingReply?: { id: Id; text: string; dueAt: EpochMillis; course?: string } }
 export interface AvailabilityWindow { date: DayKey; startMinute: number; endMinute: number }
 export interface AvailabilityMatch extends AvailabilityWindow { personId: Id; course: string }
 export interface StudyInvite { id: Id; personId: Id; course: string; startsAt: EpochMillis; endsAt: EpochMillis; location?: string; status: 'pending' | 'accepted'; acceptAt?: EpochMillis; sessionId?: Id }
-export interface Notification { id: Id; title: string; body: string; createdAt: EpochMillis; read: boolean; href?: string }
+export interface Notification { id: Id; title: string; body: string; createdAt: EpochMillis; read: boolean; href?: string; recipientId?: Id }
 export interface CampusState {
+  hideMyPosts?: boolean;
   currentUser: User;
   people: User[];
   sessions: StudySession[];
+  cancelledSessions?: Partial<Record<Id, { title: string; cancelledAt: EpochMillis }>>;
   savedSessionIds: Id[];
   posts: PartnerPost[];
   postToThread: Partial<Record<Id, Id>>;
@@ -70,18 +73,23 @@ export type InviteDraft = Pick<StudyInvite, 'personId' | 'course' | 'startsAt' |
 export type CampusAction =
   | { type: 'session/create'; draft: SessionDraft }
   | { type: 'session/join' | 'session/leave' | 'session/save' | 'session/unsave'; id: Id }
+  | { type: 'session/cancel'; id: Id }
+  | { type: 'post/delete'; id: Id }
   | { type: 'post/create'; draft: PostDraft }
   | { type: 'post/connect'; postId: Id }
   | { type: 'chat/send'; threadId: Id; text: string; course?: string }
+  | { type: 'chat/pin'; threadId: Id; pinned: boolean }
+  | { type: 'chat/delete'; threadId: Id }
   | { type: 'chat/read'; threadId: Id }
   | { type: 'availability/upsert'; course: string; window: AvailabilityWindow; previous?: AvailabilityWindow }
   | { type: 'availability/remove'; course: string; window: AvailabilityWindow }
   | { type: 'invite/send'; draft: InviteDraft }
   | { type: 'project/create'; draft: ProjectDraft }
   | { type: 'project/request' | 'project/cancel'; id: Id }
-  | { type: 'profile/update'; profile: Pick<User, 'name' | 'major'> }
+  | { type: 'profile/update'; profile: Pick<User, 'name' | 'major'> & Partial<Pick<User, 'courses'>> }
   | { type: 'notification/read'; id: Id }
   | { type: 'notification/readAll' }
+  | { type: 'feed/hideMyPosts'; hidden: boolean }
   | { type: 'demo/reset' };
 export type CampusResult = { ok: true; id?: Id } | { ok: false; error: 'invalid' | 'missing' | 'full' | 'ended' | 'forbidden'; message: string };
 export interface CampusAdapter { state: CampusState; dispatch(action: CampusAction): CampusResult }

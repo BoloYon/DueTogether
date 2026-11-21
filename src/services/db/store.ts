@@ -1,5 +1,5 @@
 import { advanceCampus, transitionCampus } from '../../shared/mockCampus';
-import { makeCampusFixtures } from '../../shared/mockData';
+import { addDemoStudyRequests, makeCampusFixtures } from '../../shared/mockData';
 import type { CampusAdapter, CampusState, Clock } from '../../shared/types';
 
 export const CAMPUS_STORAGE_KEY = '@duetogether/campus/v1';
@@ -81,8 +81,9 @@ export async function openCampusStore(storage: CampusStorage, clock: Clock = Dat
     return result;
   };
 
-  const restored = advanceCampus(state, clock());
-  if (!snapshot || restored !== state) {
+  const now = clock();
+  const restored = advanceCampus(addDemoStudyRequests(state, now), now);
+  if (restored !== snapshot?.state) {
     state = restored;
     persist();
   }

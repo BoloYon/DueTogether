@@ -1,4 +1,5 @@
-import type { CampusState, Message, PartnerPost, Thread, User } from '@/shared/types';
+import { normalizeCourse } from '@/shared/selectors';
+import type { CampusState, Message, Thread, User } from '@/shared/types';
 
 export const MESSAGE_MAX = 500;
 
@@ -16,15 +17,19 @@ export interface ThreadContext { postId: string; title: string; label: string; c
 
 /** Partner posts attached to this conversation, oldest connection first. */
 export function threadContexts(state: CampusState, thread: Thread): ThreadContext[] {
-  return thread.postIds
-    .map(id => state.posts.find(post => post.id === id))
-    .filter((post): post is PartnerPost => !!post)
-    .map(post => ({ postId: post.id, title: post.title, course: post.course, label: post.course ?? post.topic ?? 'General' }));
+  return thread.postIds.flatMap(postId => {
+    const post = state.posts.find(item => item.id === postId) ?? thread.deletedPostContexts?.[postId];
+    return post ? [{ postId, title: post.title, course: post.course, label: post.course ?? post.topic ?? 'General' }] : [];
+  });
 }
 
 /** Distinct courses the composer can tag a message with. */
 export function composerCourses(state: CampusState, thread: Thread): string[] {
-  return [...new Set(threadContexts(state, thread).flatMap(context => context.course ? [context.course] : []))];
+  return [...new Set(threadContexts(state, thread).flatMap(context => context.course ? [normalizeCourse(context.course)] : []).filter(Boolean))];
+}
+
+export function matchesChatCourse(tag: string | undefined, course: string | undefined) {
+  return (tag ? normalizeCourse(tag) : '') === (course ?? '');
 }
 
 export function validateMessage(text: string): string | null {
@@ -47,6 +52,13 @@ export function threadSummaries(state: CampusState): ThreadSummary[] {
       };
     })
     .sort((left, right) => right.activity - left.activity);
+}
+
+export function messageGroups(summaries: ThreadSummary[]) {
+  return {
+    pinned: summaries.filter(({ thread }) => thread.pinned),
+    regular: summaries.filter(({ thread }) => !thread.pinned),
+  };
 }
 
 export function totalUnread(state: CampusState) {
