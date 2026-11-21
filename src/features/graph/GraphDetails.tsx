@@ -1,3 +1,4 @@
+import { ManagePostMenu } from '@/components/campus/ManagePostMenu';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { findThreadByPerson } from '@/shared/selectors';
@@ -71,7 +72,9 @@ export function GraphDetails({ node, sections, items, actions, now, sample }: {
         <View style={styles.actions}>
           {status.kind !== 'own' && <Button compact tone="primary" label={status.kind === 'linked' ? 'Message' : 'Connect'}
             accessibilityLabel={status.kind === 'linked' ? `Message ${author}` : `Connect with ${author}`} onPress={() => actions.connect(post)} />}
-          <Button compact label="View author" onPress={() => router.push(routes.person(post.authorId))} />
+          {status.kind === 'own' && <Button compact label="View post" onPress={() => router.push(routes.post(post.id))} />}
+          {status.kind === 'own' && <ManagePostMenu kind="request" id={post.id} />}
+          <Button compact label="View author" onPress={() => router.push(status.kind === 'own' ? routes.profile : routes.person(post.authorId))} />
         </View>
       </>;
       break;

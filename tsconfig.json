@@ -16,6 +16,7 @@
       "react-native"
     ]
   },
+  "exclude": ["node_modules", "worktrees"],
   "include": [
     "**/*.ts",
     "**/*.tsx",

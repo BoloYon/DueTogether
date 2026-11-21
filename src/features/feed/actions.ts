@@ -1,3 +1,4 @@
+import { useConnectionNotice } from '@/features/chat/ConnectionNotice';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useCampus } from '@/shared/adapters';
@@ -12,6 +13,7 @@ import { postStatus, projectStatus, sessionStatus } from './model';
  */
 export function useFeedActions(now: number) {
   const { state, dispatch } = useCampus();
+  const connection = useConnectionNotice();
   const [errors, setErrors] = useState<Record<Id, string>>({});
 
   const run = useCallback((key: Id, action: Parameters<typeof dispatch>[0]): CampusResult => {
@@ -27,6 +29,7 @@ export function useFeedActions(now: number) {
   return {
     state,
     errors,
+    connection,
     toggleJoin(session: StudySession) {
       const status = sessionStatus(state, session, now);
       return run(session.id, { type: status.joined ? 'session/leave' : 'session/join', id: session.id });
@@ -37,9 +40,9 @@ export function useFeedActions(now: number) {
     /** Connect opens or reuses the author's chat. A post already linked just opens it. */
     connect(post: PartnerPost) {
       const status = postStatus(state, post);
-      if (status.kind === 'linked') { router.push(routes.chat(status.threadId)); return { ok: true, id: status.threadId } as CampusResult; }
+      if (status.kind === 'linked') { router.push(routes.chat(status.threadId, post.course)); return { ok: true, id: status.threadId } as CampusResult; }
       const result = run(post.id, { type: 'post/connect', postId: post.id });
-      if (result.ok && result.id) router.push(routes.chat(result.id));
+      if (result.ok && result.id) connection.show({ id: result.id, course: post.course, reused: status.kind === 'known' });
       return result;
     },
     message(threadId: Id) { router.push(routes.chat(threadId)); },

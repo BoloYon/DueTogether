@@ -26,6 +26,12 @@ function haystack(...parts: (string | undefined)[]) {
 export interface PartnerSearch { people: User[]; posts: PartnerPost[] }
 
 /** Search other students and their partner posts by course/topic or person name. */
+export function filterPartnerPostsByCourses(posts: PartnerPost[], courses: string[]) {
+  if (!courses.length) return posts;
+  const codes = new Set(courses.map(normalizeCourse));
+  return posts.filter(post => post.course && codes.has(normalizeCourse(post.course)));
+}
+
 export function searchPartners(state: CampusState, query: string, course?: string): PartnerSearch {
   const q = query.trim().toLowerCase().replace(/\s+/g, ' ');
   const courseKey = course ? normalizeCourse(course) : undefined;

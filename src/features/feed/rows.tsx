@@ -1,3 +1,4 @@
+import { ManagePostMenu } from '@/components/campus/ManagePostMenu';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { routes } from '@/shared/navigation';
@@ -15,7 +16,9 @@ function ErrorText({ message }: { message?: string }) {
 
 export function SessionActions({ session, actions, now }: { session: StudySession; actions: FeedActions; now: number }) {
   const status = sessionStatus(actions.state, session, now);
-  if (status.hosting) return <Tag label="Hosting" tone="accent" />;
+  if (status.hosting) return <View style={styles.liveRow}><Tag label="Hosting" tone="accent" />
+    <ManagePostMenu kind="session" id={session.id} />
+  </View>;
   if (status.ended) return <Tag label="Ended" />;
   if (!status.joined && status.full) return <Tag label="Full" tone="warning" />;
   return <Button compact tone={status.joined ? 'secondary' : 'primary'} label={status.joined ? 'Leave' : 'Join'}
@@ -76,9 +79,11 @@ export function PartnerPostRow({ post, actions, now }: { post: PartnerPost; acti
     <Txt variant="body" style={styles.bold}>{post.title}</Txt>
     <Txt variant="small" tone="secondary">{post.description}</Txt>
     <View style={styles.rowTop}>
-      <Pressable accessibilityRole="link" accessibilityLabel={`Author ${author}. Opens profile.`} onPress={() => router.push(routes.person(post.authorId))} style={styles.author} hitSlop={8}>
+      <Pressable accessibilityRole="link" accessibilityLabel={`Author ${author}. Opens profile.`} onPress={() => router.push(status.kind === 'own' ? routes.profile : routes.person(post.authorId))} style={styles.author} hitSlop={8}>
         <Txt variant="small" tone="accent" style={styles.bold}>{author}</Txt>
       </Pressable>
+      {status.kind === 'own' && <Button compact tone="plain" label="View post" onPress={() => router.push(routes.post(post.id))} />}
+      {status.kind === 'own' && <ManagePostMenu kind="request" id={post.id} />}
       {status.kind !== 'own' && <Button compact tone={status.kind === 'linked' ? 'secondary' : 'primary'}
         label={status.kind === 'linked' ? 'Message' : 'Connect'}
         accessibilityLabel={status.kind === 'linked' ? `Message ${author}` : `Connect with ${author} about ${post.title}`}

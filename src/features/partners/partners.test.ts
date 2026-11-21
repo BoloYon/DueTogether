@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { composerCourses, threadContexts, threadSummaries, totalUnread, unreadCount, validateMessage } from '@/features/chat/logic';
+import { composerCourses, matchesChatCourse, threadContexts, threadSummaries, totalUnread, unreadCount, validateMessage } from '@/features/chat/logic';
 import { advanceCampus, transitionCampus } from '@/shared/mockCampus';
 import { makeCampusFixtures } from '@/shared/mockData';
-import { findAvailabilityOverlaps } from '@/shared/selectors';
+import { discoverablePartnerPosts, findAvailabilityOverlaps } from '@/shared/selectors';
 import type { CampusAction, CampusState } from '@/shared/types';
-import { availabilityError, buildWindow, connectState, inviteDraftFromMatch, inviteForMatch, isContact, minuteToInput, myWindows, searchPartners, windowPassed } from './logic';
+import { availabilityError, buildWindow, connectState, filterPartnerPostsByCourses, inviteDraftFromMatch, inviteForMatch, isContact, minuteToInput, myWindows, searchPartners, windowPassed } from './logic';
 import { atMinute, dayKeyOf, parseTimeOfDay } from '@/components/campus/format';
 
 const now = new Date(2026, 10, 21, 12).getTime();
@@ -69,8 +69,8 @@ test('chat: validation, unread from thread state, simulated reply delivered once
 
 test('search finds posts and people by course, topic and name', () => {
   const state = seed();
-  assert.deepEqual(searchPartners(state, 'mat 240').posts.map(post => post.id), ['mira-1', 'mira-2']);
-  assert.deepEqual(searchPartners(state, 'dev').posts.map(post => post.id), ['dev-1']);
+  assert.deepEqual(searchPartners(state, 'mat 240').posts.map(post => post.id), ['mira-1', 'mira-2', 'demo-mat240-eigenvectors']);
+  assert.deepEqual(searchPartners(state, 'dev').posts.map(post => post.id), ['dev-1', 'demo-mat240-eigenvectors']);
   assert.deepEqual(searchPartners(state, 'noa').people.map(person => person.id), ['noa']);
   assert.deepEqual(searchPartners(state, '', 'phy 220').people.map(person => person.id), ['dev', 'noa']);
   assert.equal(searchPartners(state, 'zzz').posts.length, 0);
@@ -155,4 +155,34 @@ test('calendar editor rejects already-started windows and preserves valid future
   assert.match(availabilityError({ date, startMinute: 960, endMinute: 960 }, noon) ?? '', /end time must be after/);
   assert.equal(availabilityError({ date, startMinute: 960, endMinute: 1080 }, noon), null);
   assert.equal(availabilityError({ date, startMinute: 1380, endMinute: 1440 }, noon), null);
+});
+
+test('partner course filters match any selected normalized code and clear to all posts', () => {
+  const posts = searchPartners(seed(), '').posts;
+  assert.equal(filterPartnerPostsByCourses(posts, []).length, posts.length);
+  assert.deepEqual(filterPartnerPostsByCourses(posts, [' mat   240 ']).map(post => post.id), ['mira-1', 'mira-2', 'demo-mat240-eigenvectors']);
+  assert.deepEqual(filterPartnerPostsByCourses(posts, ['mat 240', 'phy 220']), posts);
+  assert.deepEqual(filterPartnerPostsByCourses(posts, ['OTHER 123']), []);
+});
+
+test('linked course posts leave discovery while one chat retains normalized contexts and reply tags', () => {
+  let state = seed();
+  state.posts = state.posts.map(post => post.id === 'mira-2' ? { ...post, course: ' phy   220 ' } : post);
+  state.posts.push({ ...state.posts.find(post => post.id === 'mira-1')!, id: 'mira-3', course: ' mat   240 ' });
+  for (const postId of ['mira-2', 'mira-3']) {
+    const [next, result] = run(state, { type: 'post/connect', postId });
+    assert.deepEqual(result, { ok: true, id: 'thread-mira' });
+    state = next;
+  }
+  assert.equal(state.threads.length, 1);
+  assert.deepEqual(composerCourses(state, state.threads[0]), ['MAT 240', 'PHY 220']);
+  assert.deepEqual(discoverablePartnerPosts(state).map(post => post.id), ['dev-1', 'demo-mat240-eigenvectors', 'demo-phy220-standing-waves']);
+  [state] = run(state, { type: 'chat/send', threadId: 'thread-mira', text: 'Physics', course: 'PHY 220' });
+  [state] = run(state, { type: 'chat/send', threadId: 'thread-mira', text: 'General' }, now + 10);
+  state = advanceCampus(state, now + 2_000);
+  const messages = state.threads[0].messages;
+  assert.deepEqual(messages.filter(message => matchesChatCourse(message.course, undefined)).map(message => message.text), ['General']);
+  assert.deepEqual(messages.filter(message => matchesChatCourse(message.course, 'PHY 220')).map(message => message.text), ['Physics', 'Sounds good.']);
+  [state] = run(state, { type: 'chat/delete', threadId: 'thread-mira' }, now + 2_000);
+  assert.ok(discoverablePartnerPosts(state).some(post => post.id === 'mira-2'));
 });

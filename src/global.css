@@ -29,4 +29,14 @@
   [role='tablist'][aria-label='Main'] > [role='tab'] {
     padding-inline: 8px;
   }
+  }
+}
+
+/* The Expo web tab strip can overlap the app header. Only its tab buttons need pointer input. */
+[role="tablist"][aria-label="Main"] {
+  pointer-events: none;
+}
+
+[role="tablist"][aria-label="Main"] [role="tab"] {
+  pointer-events: auto;
 }

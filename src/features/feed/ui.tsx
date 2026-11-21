@@ -6,7 +6,7 @@ import { usePalette } from './palette';
 /** Shared A1 primitives: 44 pt targets, system type, theme-aware colors. */
 
 export type IconName =
-  | 'chevron-down' | 'chevron-right' | 'chevron-left' | 'gear' | 'live' | 'clock' | 'pin' | 'globe'
+  | 'chevron-down' | 'chevron-right' | 'chevron-left' | 'gear' | 'live' | 'clock' | 'pushpin' | 'pin' | 'globe'
   | 'bell' | 'bookmark' | 'bookmark-fill' | 'people' | 'book' | 'quiz' | 'exam' | 'event' | 'homework' | 'fit' | 'plus' | 'minus' | 'external' | 'refresh' | 'lock';
 
 export function Icon({ name, size = 18, color }: { name: IconName; size?: number; color: string }) {
@@ -19,6 +19,7 @@ export function Icon({ name, size = 18, color }: { name: IconName; size?: number
     case 'gear': body = <><Circle cx={12} cy={12} r={3.2} {...stroke} /><Path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M5.5 18.5l1.9-1.9M16.6 7.4l1.9-1.9" {...stroke} /></>; break;
     case 'live': body = <Circle cx={12} cy={12} r={5} fill={color} />; break;
     case 'clock': body = <><Circle cx={12} cy={12} r={8.5} {...stroke} /><Path d="M12 7.5V12l3 2" {...stroke} /></>; break;
+    case 'pushpin': body = <Path d="M9 4h6l-1 5 3 4v2H7v-2l3-4-1-5zm3 11v6" {...stroke} />; break;
     case 'pin': body = <><Path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0113 0c0 5-6.5 11-6.5 11z" {...stroke} /><Circle cx={12} cy={10} r={2.3} {...stroke} /></>; break;
     case 'globe': body = <><Circle cx={12} cy={12} r={8.5} {...stroke} /><Path d="M3.5 12h17M12 3.5c2.5 2.6 2.5 14.4 0 17M12 3.5c-2.5 2.6-2.5 14.4 0 17" {...stroke} /></>; break;
     case 'people': body = <><Circle cx={9} cy={8.5} r={3.2} {...stroke} /><Path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M15.5 5.6a3 3 0 010 5.8M17.5 14.3c1.7.6 2.8 2.2 3.1 4.7" {...stroke} /></>; break;

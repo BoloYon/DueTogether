@@ -1,7 +1,7 @@
 import { advanceCampus, transitionCampus } from '../../shared/mockCampus';
 import { recordContributionCredits } from '../../shared/contributions';
 import { campusMediaKeys } from '../../shared/profile-media';
-import { makeCampusFixtures, makeSampleCollections } from '../../shared/mockData';
+import { addDemoStudyRequests, makeCampusFixtures, makeSampleCollections } from '../../shared/mockData';
 import type { CampusAdapter, CampusState, Clock } from '../../shared/types';
 
 export const CAMPUS_STORAGE_KEY = '@duetogether/campus/v1';
@@ -106,7 +106,8 @@ export async function openCampusStore(storage: CampusStorage, clock: Clock = Dat
     return result;
   };
 
-  const restored = advanceCampus(state, clock());
+  const now = clock();
+  const restored = advanceCampus(addDemoStudyRequests(state, now), now);
   if (!snapshot || snapshot.migrated || restored !== state) {
     state = restored;
     persist();

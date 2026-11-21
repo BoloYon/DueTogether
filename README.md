@@ -7,7 +7,7 @@ DueTogether is a Florida Polytechnic University student app for finding study se
 - **Campus features:** a Feed of live and upcoming study sessions, partner posts and chat, availability matching with study invites, projects you can ask to join, a profile and notifications.
 - **Calendar:** your Canvas assignments, quizzes, exams and events in a list or month grid. **Study for this** turns a quiz or exam into a prefilled study-session draft.
 
-**What's real and what's simulated.** All campus content (people, courses, places, sessions, posts and projects) is fictional sample data stored only on the phone. There is no campus server, campus sign-in, push notification service or messaging between devices. Chat replies and invite acceptance are simulated. Canvas reads are real only in live mode, with the account holder's own token. Otherwise Calendar shows a labeled sample calendar.
+**What's real and what's simulated.** All campus content (people, courses, places, sessions, posts and projects) is fictional sample data stored only on the phone. There is no campus server, campus sign-in, push notification service or messaging between devices. Chat replies and invite acceptance are simulated. Post deletions and session cancellations generate local notifications for each affected demo profile and a summary in the current inbox. The summary shows who would be notified without sending anything to another device. Canvas reads are real only in live mode, with the account holder's own token. Otherwise Calendar shows a labeled sample calendar.
 
 ## Run the app
 

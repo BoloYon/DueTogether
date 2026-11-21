@@ -1,3 +1,4 @@
+import { ManagePostMenu } from '@/components/campus/ManagePostMenu';
 import { IconButton } from '@/features/feed/ui';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -17,6 +18,11 @@ export function SessionScreen({ id }: DetailParams) {
   const session = state.sessions.find(item => item.id === id);
 
   if (!session) {
+    const cancelled = state.cancelledSessions?.[id];
+    if (cancelled) return <Screen title={cancelled.title}>
+      <EmptyState title="This session was cancelled" body="The host cancelled this study session."
+        action={<Button label="Go to Feed" variant="secondary" onPress={() => router.navigate(routes.feed)} />} />
+    </Screen>;
     return (
       <Screen title="Session">
         <EmptyState
@@ -38,8 +44,10 @@ export function SessionScreen({ id }: DetailParams) {
   return (
     <Screen
       title={session.title}
-      headerRight={() => <IconButton icon={view.saved ? 'bookmark-fill' : 'bookmark'} selected={view.saved}
-        label={view.saved ? 'Remove saved session' : 'Save session'} onPress={() => run(view.saved ? 'session/unsave' : 'session/save')} />}
+      headerRight={() => <Row><IconButton icon={view.saved ? 'bookmark-fill' : 'bookmark'} selected={view.saved}
+        label={view.saved ? 'Remove saved session' : 'Save session'} onPress={() => run(view.saved ? 'session/unsave' : 'session/save')} />
+        {view.hosting && <ManagePostMenu kind="session" id={session.id} />}
+      </Row>}
       footer={view.attendance && <Button label={view.attendance.label}
         variant={view.attendance.action === 'session/leave' ? 'secondary' : 'primary'} onPress={() => run(view.attendance!.action)} />}>
       <Row wrap>

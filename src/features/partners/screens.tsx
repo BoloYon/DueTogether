@@ -1,3 +1,5 @@
+import { ConnectionNotice, useConnectionNotice } from '@/features/chat/ConnectionNotice';
+import { FilterChip } from '@/features/feed/ui';
 import { ProfileCollections } from '@/features/profile/collections';
 import { ProfileHeader } from '@/features/profile/profile-header';
 import { TabPage } from '@/components/campus/TabPage';
@@ -5,27 +7,38 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
 import {
-  Avatar, Badge, Body, Button, EmptyState, ListRow, Notice, Row, Screen, Section, TextField,
-  formatAgo, formatWhen, useNow,
+  Badge, Body, Button, EmptyState, ListRow, Notice, Row, Screen, Section, TextField, formatWhen, useNow,
 } from '@/components/campus';
-import { threadSummaries } from '@/features/chat/logic';
 import { useCampus } from '@/shared/adapters';
 import { routes, type DetailParams } from '@/shared/navigation';
-import { findAvailabilityOverlaps, findThreadByPerson, normalizeCourse } from '@/shared/selectors';
-import { coursesForAvailability, isContact, postsByAuthor, searchPartners, sortedInvites } from './logic';
+import { findAvailabilityOverlaps, findThreadByPerson, normalizeCourse, selectFeedSections } from '@/shared/selectors';
+import { coursesForAvailability, filterPartnerPostsByCourses, isContact, postsByAuthor, sortedInvites } from './logic';
 import { InviteRow, MatchCard, PersonRow, PostCard } from './parts';
 
-/* ---------------- Partners tab ---------------- */
+type PartnersSection = 'sessions' | 'courses' | 'collaboration';
 
 export function PartnersScreen() {
   const { state } = useCampus();
   const router = useRouter();
   const now = useNow();
-  const summaries = threadSummaries(state);
-  const posts = searchPartners(state, '').posts;
+  const notice = useConnectionNotice();
+  const [collapsed, setCollapsed] = useState<Partial<Record<PartnersSection, boolean>>>({});
+  const collapse = (key: PartnersSection) => ({
+    expanded: !collapsed[key],
+    onToggle: () => setCollapsed(current => ({ ...current, [key]: !current[key] })),
+  });
+  const [selection, setSelection] = useState<string[]>([]);
+  const courses = [...new Set(state.currentUser.courses.map(normalizeCourse).filter(Boolean))];
+  const selected = selection.filter(course => courses.includes(course));
+  const discovery = selectFeedSections(state, [], now);
+  const sessions = [...discovery.happeningNow, ...discovery.comingUp];
+  const coursePosts = filterPartnerPostsByCourses(discovery.partnersWanted.filter(post => post.course?.trim()), selected);
+  const collaboration = discovery.partnersWanted.filter(post => !post.course?.trim());
+  const clear = () => setSelection([]);
   const pendingInvites = state.invites.filter(invite => invite.status === 'pending').length;
   return (
-    <TabPage title="Partners" contentContainerStyle={{ padding: 16, gap: 20 }}>
+    <TabPage title="Partners" contentContainerStyle={{ padding: 16, gap: 20 }} footer={notice.confirmation &&
+      <ConnectionNotice confirmation={notice.confirmation} onDismiss={notice.dismiss} />}>
       <Body small secondary>Campus demo · Fictional classmates</Body>
       <Row wrap>
         <Button label="Find a study match" onPress={() => router.push(routes.partnerFind)} />
@@ -34,28 +47,34 @@ export function PartnersScreen() {
           onPress={() => router.push(routes.partnerInvite)} />
       </Row>
 
-      <Section title="Messages">
-        {summaries.length ? summaries.map(({ thread, person, last, unread }) => (
-          <ListRow
-            key={thread.id}
-            leading={<Avatar name={person?.name ?? '?'} initials={person?.initials} />}
-            title={person?.name ?? 'Classmate'}
-            subtitle={thread.pendingReply ? 'Typing…' : last ? `${last.authorId === state.currentUser.id ? 'You: ' : ''}${last.text}` : 'No messages yet'}
-            meta={last ? formatAgo(last.sentAt, now) : undefined}
-            trailing={unread ? <Badge label={String(unread)} tone="accent" accessibilityLabel={`${unread} unread`} /> : undefined}
-            onPress={() => router.push(routes.chat(thread.id))}
-            accessibilityLabel={`${person?.name ?? 'Classmate'}${unread ? `, ${unread} unread` : ''}`}
-            accessibilityHint="Opens conversation"
-          />
-        )) : <EmptyState title="No conversations yet" body="Connect on a partner post below to start a chat." />}
+      <Section title="Study sessions" collapse={collapse('sessions')} count={sessions.length}>
+        {sessions.length ? sessions.map(session =>
+          <ListRow key={session.id} title={session.title}
+            subtitle={`${session.course ?? session.topic ?? 'Study'} · ${formatWhen(session.startsAt, now)}`}
+            trailing={session.startsAt <= now ? <Badge label="Live" tone="live" /> : undefined}
+            onPress={() => router.push(routes.session(session.id))} accessibilityHint="Opens session details" />
+        ) : <Body secondary>No upcoming study sessions.</Body>}
       </Section>
 
-      <Section title="Partners wanted"
+      <Section title="Course requests" collapse={collapse('courses')} count={coursePosts.length}
         action={<Button compact variant="ghost" label="New post" accessibilityLabel="Create a partner post" onPress={() => router.push(routes.create({ kind: 'partner' }))} />}>
-        {posts.length ? posts.map(post => <PostCard key={post.id} post={post} />)
-          : <EmptyState title="No partner posts" body="Use New post to find a partner." />}
+        {courses.length > 0 ? <Row wrap>
+          {courses.map(course => <FilterChip key={course} label={course} selected={selected.includes(course)}
+            onPress={() => setSelection(current => current.includes(course) ? current.filter(item => item !== course) : [...current, course])} />)}
+          {selected.length > 0 && <Button compact variant="ghost" label="Clear" accessibilityLabel="Clear course filters" onPress={clear} />}
+        </Row> : <Row wrap>
+          <Body secondary>No course codes saved.</Body>
+          <Button compact variant="ghost" label="Edit courses" onPress={() => router.push(routes.profileSettings)} />
+        </Row>}
+        {coursePosts.length ? coursePosts.map(post => <PostCard key={post.id} post={post} onConnected={notice.show} />)
+          : selected.length > 0 ? <EmptyState title="No partner posts for these courses" body="Clear the filters to see all course requests."
+            action={<Button label="Clear" onPress={clear} />} />
+            : <Body secondary>No course requests right now.</Body>}
       </Section>
-
+      <Section title="Collaboration requests" collapse={collapse('collaboration')} count={collaboration.length}>
+        {collaboration.length ? collaboration.map(post => <PostCard key={post.id} post={post} onConnected={notice.show} />)
+          : <Body secondary>No collaboration requests right now.</Body>}
+      </Section>
       <Section title="Classmates">
         {state.people.map(person => <PersonRow key={person.id} person={person} />)}
       </Section>

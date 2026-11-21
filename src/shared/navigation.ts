@@ -2,6 +2,7 @@
 import type { AvailabilityWindow, Id } from './types';
 
 export type DetailParams = { id: Id };
+export type ChatParams = DetailParams & { course?: string };
 export type CreateParams = { course?: string; title?: string; kind?: 'session' | 'partner' | 'project' };
 export const routes = {
   feed: '/',
@@ -9,6 +10,7 @@ export const routes = {
   projects: '/projects',
   calendar: '/calendar',
   profile: '/profile',
+  messages: '/messages',
   calendarSettings: '/calendar/settings',
   partnerFind: '/partners/find',
   partnerAvailability: '/partners/availability',
@@ -23,7 +25,8 @@ export const routes = {
   profileSettings: '/profile/settings',
   create: (params: CreateParams = {}) => ({ pathname: '/create', params } as const),
   session: (id: Id) => ({ pathname: '/session/[id]', params: { id } } as const),
+  post: (id: Id) => ({ pathname: '/post/[id]', params: { id } } as const),
   person: (id: Id) => ({ pathname: '/person/[id]', params: { id } } as const),
-  chat: (id: Id) => ({ pathname: '/chat/[id]', params: { id } } as const),
+  chat: (id: Id, course?: string) => ({ pathname: '/chat/[id]', params: course ? { id, course } : { id } } as const),
   project: (id: Id) => ({ pathname: '/project/[id]', params: { id } } as const),
 } as const;

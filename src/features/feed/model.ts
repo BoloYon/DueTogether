@@ -21,6 +21,34 @@ export function feedSections(state: CampusState, items: CanvasItem[], now: numbe
   return selectFeedSections(state, items, now);
 }
 
+type OwnFeedPost =
+  | { kind: 'request'; post: PartnerPost }
+  | { kind: 'session'; post: StudySession; live: boolean }
+  | { kind: 'project'; post: Project };
+
+export function workFeedContent(state: CampusState, items: CanvasItem[], now: number) {
+  const all = feedSections(state, items, now);
+  const me = state.currentUser.id;
+  const otherSections = {
+    ...all,
+    happeningNow: all.happeningNow.filter(session => session.hostId !== me),
+    comingUp: all.comingUp.filter(session => session.hostId !== me),
+    newProjects: all.newProjects.filter(project => project.ownerId !== me),
+  };
+  if (state.hideMyPosts) return { list: otherSections, graph: otherSections, ownPosts: [] as OwnFeedPost[] };
+
+  const requests = state.posts.filter(post => post.authorId === me);
+  const ownPosts: OwnFeedPost[] = [
+    ...requests.map(post => ({ kind: 'request' as const, post })),
+    ...all.happeningNow.filter(post => post.hostId === me).map(post => ({ kind: 'session' as const, post, live: true })),
+    ...all.comingUp.filter(post => post.hostId === me).map(post => ({ kind: 'session' as const, post, live: false })),
+    ...all.newProjects.filter(post => post.ownerId === me).map(post => ({ kind: 'project' as const, post })),
+  ];
+  ownPosts.sort((left, right) => right.post.createdAt - left.post.createdAt);
+  const graph = { ...all, partnersWanted: [...all.partnersWanted, ...requests].sort((left, right) => right.createdAt - left.createdAt) };
+  return { list: otherSections, graph, ownPosts };
+}
+
 export function sectionCount(sections: FeedSections, key: SectionKey) {
   return sections[key].length;
 }

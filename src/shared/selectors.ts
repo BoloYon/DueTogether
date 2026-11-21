@@ -1,6 +1,6 @@
 
 import { localDayKey } from './mockData';
-import type { AvailabilityMatch, CampusState, CanvasItem, Id, StudySession } from './types';
+import type { AvailabilityMatch, CampusState, CanvasItem, Id, Notification, StudySession } from './types';
 
 export function normalizeCourse(course: string) {
   return course.trim().replace(/\s+/g, ' ').toUpperCase();
@@ -14,8 +14,20 @@ export function sessionState(session: StudySession, userId: Id, now: number) {
   return { joined, hosting, ended, full, canJoin: !joined && !hosting && !ended && !full };
 }
 
+export function otherSessionAttendees(session: StudySession) {
+  return [...new Set(session.attendeeIds)].filter(id => id !== session.hostId);
+}
+
+export function notificationForUser(item: Notification, userId: Id) {
+  return item.recipientId === undefined || item.recipientId === userId;
+}
+
 export function findThreadByPerson(state: CampusState, personId: Id) {
   return state.threads.find(thread => thread.personId === personId);
+}
+
+export function discoverablePartnerPosts(state: CampusState) {
+  return state.posts.filter(post => post.authorId !== state.currentUser.id && !state.postToThread[post.id]);
 }
 
 export type DueRange = 'today' | 'tomorrow' | 'next-seven-days';
@@ -45,7 +57,7 @@ export function selectFeedSections(state: CampusState, items: CanvasItem[], now:
     dueSoon,
     comingUp: state.sessions.filter(session => session.startsAt > now && session.endsAt > session.startsAt)
       .sort((left, right) => left.startsAt - right.startsAt),
-    partnersWanted: state.posts.filter(post => post.authorId !== state.currentUser.id).sort(newest),
+    partnersWanted: discoverablePartnerPosts(state).sort(newest),
     newProjects: [...state.projects].sort(newest),
   };
 }

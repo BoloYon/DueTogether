@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { composerCourses } from '../../features/chat/logic';
+import { sortedNotifications, unreadNotificationCount } from '../../features/notifications/logic';
+import { profileSections } from '../../features/profile/logic';
 import { localDayKey, makeCampusFixtures } from '../../shared/mockData';
 import { findAvailabilityOverlaps } from '../../shared/selectors';
 import { watchCampusDelivery } from './delivery';
@@ -226,6 +229,155 @@ test('retries the current snapshot after a failed write', async () => {
   assert.ok(reopened.getState().sessions[0].attendeeIds.includes('you'));
 });
 
+test('legacy threads retain pins through relaunch, unpin, and campus reset', async () => {
+  const clock = () => start;
+  const storage = memoryStorage();
+  const legacy = makeCampusFixtures(clock);
+  storage.data.set(CAMPUS_STORAGE_KEY, JSON.stringify({ version: 1, sequence: 0, state: legacy }));
+  const store = await openCampusStore(storage, clock);
+  const threadId = 'thread-mira';
+  assert.equal(store.getState().threads[0].pinned, undefined);
+  assert.equal(store.dispatch({ type: 'chat/pin', threadId, pinned: true }).ok, true);
+  assert.deepEqual(store.dispatch({ type: 'post/connect', postId: 'mira-2' }), { ok: true, id: threadId });
+  assert.equal(store.getState().threads.length, 1);
+  await store.flush();
+
+  const reopened = await openCampusStore(storage, clock);
+  assert.equal(reopened.getState().threads[0].pinned, true);
+  reopened.dispatch({ type: 'chat/pin', threadId, pinned: false });
+  assert.equal(reopened.getState().threads[0].pinned, false);
+  assert.equal(reopened.getState().threads[0].readAt, legacy.threads[0].readAt);
+  reopened.dispatch({ type: 'chat/pin', threadId, pinned: true });
+  reopened.dispatch({ type: 'demo/reset' });
+  assert.equal(reopened.getState().threads[0].pinned, undefined);
+});
+
+test('deleting a pinned chat removes its queued reply and all links, and allows a fresh connection after relaunch', async () => {
+  const storage = memoryStorage();
+  let now = start;
+  const store = await openCampusStore(storage, () => now);
+  const threadId = 'thread-mira';
+  store.dispatch({ type: 'post/connect', postId: 'mira-2' });
+  store.dispatch({ type: 'chat/pin', threadId, pinned: true });
+  store.dispatch({ type: 'chat/send', threadId, text: 'Queued reply' });
+  assert.ok(store.getState().threads[0].pendingReply);
+  store.dispatch({ type: 'chat/delete', threadId });
+  await store.flush();
+  now += 10_000;
+  const reopened = await openCampusStore(storage, () => now);
+  reopened.advance();
+  assert.equal(reopened.getState().threads.length, 0);
+  assert.deepEqual(reopened.getState().postToThread, {});
+  assert.ok(reopened.getState().posts.some(post => post.id === 'mira-1'));
+  const connected = reopened.dispatch({ type: 'post/connect', postId: 'mira-1' });
+  assert.ok(connected.ok && connected.id && connected.id !== threadId);
+  assert.deepEqual(reopened.dispatch({ type: 'post/connect', postId: 'mira-2' }), connected);
+  assert.equal(reopened.getState().threads.length, 1);
+  assert.equal(reopened.getState().threads[0].pinned, undefined);
+});
+
+test('older demo snapshots get missing study requests without replacing existing posts or links', async () => {
+  const storage = memoryStorage();
+  const state = makeCampusFixtures(() => start);
+  state.posts = state.posts.filter(post => post.id !== 'demo-phy220-standing-waves');
+  const existing = state.posts.find(post => post.id === 'demo-mat240-eigenvectors')!;
+  existing.title = 'Keep my saved copy';
+  storage.data.set(CAMPUS_STORAGE_KEY, JSON.stringify({ version: 1, sequence: 42, state }));
+  const store = await openCampusStore(storage, () => start);
+  assert.deepEqual(store.getState().postToThread, state.postToThread);
+  assert.deepEqual(store.getState().threads, state.threads);
+  assert.equal(store.getState().posts.find(post => post.id === existing.id)?.title, existing.title);
+  assert.equal(store.getState().posts.filter(post => post.id === 'demo-phy220-standing-waves').length, 1);
+  await store.flush();
+  const reopened = await openCampusStore(storage, () => start + 10_000);
+  assert.deepEqual(reopened.getState().posts, store.getState().posts);
+});
+
+test('the Work Feed visibility preference survives reopening and preserves campus posts', async () => {
+  const storage = memoryStorage();
+  const store = await openCampusStore(storage, () => start);
+  assert.notEqual(store.getState().hideMyPosts, true);
+  const posts = store.getState().posts;
+  store.dispatch({ type: 'feed/hideMyPosts', hidden: true });
+  await store.flush();
+  const reopened = await openCampusStore(storage, () => start);
+  assert.equal(reopened.getState().hideMyPosts, true);
+  assert.deepEqual(reopened.getState().posts, posts);
+  reopened.dispatch({ type: 'feed/hideMyPosts', hidden: false });
+  await reopened.flush();
+  const restored = await openCampusStore(storage, () => start);
+  assert.equal(restored.getState().hideMyPosts, false);
+  assert.deepEqual(restored.getState().posts, posts);
+});
+
+test('only the host can cancel and a cancelled session retains its notice across reopen', async () => {
+  const storage = memoryStorage();
+  const fixture = makeCampusFixtures(() => start);
+  const session = fixture.sessions[0];
+  session.hostId = fixture.currentUser.id;
+  session.attendeeIds = [fixture.currentUser.id, 'mira', 'dev', 'dev'];
+  fixture.savedSessionIds.push(session.id);
+  storage.data.set(CAMPUS_STORAGE_KEY, JSON.stringify({ version: 1, sequence: 0, state: fixture }));
+  const store = await openCampusStore(storage, () => start);
+  assert.equal(store.dispatch({ type: 'session/cancel', id: 'upcoming' }).ok, false);
+  assert.equal(store.dispatch({ type: 'session/leave', id: session.id }).ok, false);
+  assert.equal(store.dispatch({ type: 'session/cancel', id: session.id }).ok, true);
+  assert.equal(store.dispatch({ type: 'session/cancel', id: session.id }).ok, false);
+  assert.equal(store.dispatch({ type: 'session/join', id: session.id }).ok, false);
+  await store.flush();
+
+  const reopened = await openCampusStore(storage, () => start + 1000);
+  const state = reopened.getState();
+  assert.equal(state.cancelledSessions?.[session.id]?.title, session.title);
+  assert.ok(!state.sessions.some(item => item.id === session.id));
+  assert.ok(!state.savedSessionIds.includes(session.id));
+  const attendee = { ...state, currentUser: state.people.find(person => person.id === 'dev')! };
+  assert.ok(!profileSections(attendee, start).going.some(item => item.id === session.id));
+  const notices = state.notifications.filter(item => item.title === 'Session cancelled · ' + session.title);
+  assert.deepEqual(notices.map(item => item.recipientId).sort(), ['dev', 'mira', 'you']);
+  const demo = sortedNotifications(state).filter(item => item.title === 'Session cancelled · ' + session.title);
+  assert.equal(demo.length, 1);
+  assert.equal(demo[0].body, '2 attendees would be notified.');
+  assert.equal(demo[0].href, '/session/' + session.id);
+  assert.equal(unreadNotificationCount(state), 2);
+  reopened.dispatch({ type: 'notification/readAll' });
+  assert.equal(unreadNotificationCount(reopened.getState()), 0);
+  assert.ok(reopened.getState().notifications.some(item => item.recipientId === 'dev' && !item.read));
+});
+
+test('deleting an authored request preserves chat context, notifies each linked person once, and survives reopen', async () => {
+  const storage = memoryStorage();
+  const fixture = makeCampusFixtures(() => start);
+  const request = { id: 'owned-request', title: 'Vector practice', authorId: fixture.currentUser.id,
+    course: 'MAT 240', description: 'Compare notes', createdAt: start - 1 };
+  fixture.posts.push(request, { ...request, id: 'own-unlinked', title: 'Solo post', topic: 'Portfolio', course: undefined });
+  fixture.threads = [
+    { id: 'mira', personId: 'mira', postIds: [request.id], messages: [{ id: 'original', authorId: 'mira', text: 'Yes', sentAt: start }] },
+    { id: 'dev', personId: 'dev', postIds: [request.id], messages: [], pinned: true },
+    { id: 'dev-legacy', personId: 'dev', postIds: [request.id], messages: [] },
+    { id: 'noa', personId: 'noa', postIds: [], messages: [] },
+  ];
+  fixture.postToThread[request.id] = 'mira';
+  storage.data.set(CAMPUS_STORAGE_KEY, JSON.stringify({ version: 1, sequence: 0, state: fixture }));
+  const store = await openCampusStore(storage, () => start);
+  assert.equal(store.dispatch({ type: 'post/delete', id: 'mira-1' }).ok, false);
+  assert.equal(store.dispatch({ type: 'post/delete', id: request.id }).ok, true);
+  assert.equal(store.dispatch({ type: 'post/delete', id: request.id }).ok, false);
+  assert.equal(store.dispatch({ type: 'post/delete', id: 'own-unlinked' }).ok, true);
+  await store.flush();
+
+  const state = (await openCampusStore(storage, () => start + 1000)).getState();
+  assert.ok(!state.posts.some(post => post.id === request.id));
+  assert.equal(state.postToThread[request.id], undefined);
+  assert.deepEqual(composerCourses(state, state.threads[0]), ['MAT 240']);
+  assert.deepEqual(state.threads[0].messages, fixture.threads[0].messages);
+  assert.equal(state.threads[1].pinned, true);
+  assert.deepEqual(state.notifications.filter(item => item.title === 'Post deleted · Vector practice')
+    .map(item => item.recipientId).sort(), ['dev', 'mira', 'you']);
+  assert.equal(sortedNotifications(state).find(item => item.title === 'Post deleted · Vector practice')?.href, '/chat/mira');
+  assert.equal(sortedNotifications(state).find(item => item.title === 'Post deleted · Solo post')?.body, 'Confirmed on this device.');
+});
+
 test('upgrades v1 in place and preserves campus records, references and guide stars across launches', async () => {
   const storage = memoryStorage();
   const clock = () => start;
@@ -290,4 +442,28 @@ test('only removes replaced and reset media after the new snapshot is committed'
   await store.flush();
   assert.deepEqual(removed, [first, second]);
   assert.equal((await openCampusStore(storage, () => start)).getState().currentUser.avatar, undefined);
+});
+
+test('combined snapshots preserve collection edits, conversation context and earned credit after a post is removed', async () => {
+  const storage = memoryStorage();
+  const store = await openCampusStore(storage, () => start);
+  assert.ok(store.dispatch({ type: 'profile/update', profile: { name: 'Avery', bio: 'Study notes', courses: [' phy 220 '] } }).ok);
+  const collection = store.dispatch({ type: 'collection/create', name: 'Physics notes' });
+  const post = store.dispatch({ type: 'post/create', draft: { title: 'Wave notes', course: 'PHY 220', description: 'Compare wave notes' } });
+  assert.ok(collection.ok && collection.id && post.ok && post.id);
+  assert.ok(store.dispatch({ type: 'demo/contribute', kind: 'post', id: post.id }).ok);
+  const thread = store.getState().threads.find(item => item.postIds.includes(post.id!))!;
+  assert.ok(store.dispatch({ type: 'chat/pin', threadId: thread.id, pinned: true }).ok);
+  assert.ok(store.dispatch({ type: 'post/delete', id: post.id }).ok);
+  await store.flush();
+
+  const state = (await openCampusStore(storage, () => start + 1)).getState();
+  assert.equal(state.currentUser.bio, 'Study notes');
+  assert.deepEqual(state.currentUser.courses, ['PHY 220']);
+  assert.ok(state.collections.some(item => item.id === collection.id));
+  const reopened = state.threads.find(item => item.id === thread.id)!;
+  assert.equal(reopened.pinned, true);
+  assert.ok(composerCourses(state, reopened).includes('PHY 220'));
+  assert.ok(state.contributionCredits.some(credit => credit.kind === 'post' && credit.itemId === post.id));
+  assert.equal(sortedNotifications(state).find(item => item.title === 'Post deleted · Wave notes')?.body, '1 connection would be notified.');
 });

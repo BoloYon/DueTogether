@@ -22,7 +22,11 @@ export default function TabLayout() {
       <NativeTabs.Trigger name="partners" disableAutomaticContentInsets={manualInsets}>
         <NativeTabs.Trigger.Label>Partners</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} md="group" />
-        <NativeTabs.Trigger.Badge hidden={unread === 0}>{String(unread)}</NativeTabs.Trigger.Badge>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="messages" disableAutomaticContentInsets={manualInsets}>
+        <NativeTabs.Trigger.Label>Messages</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'bubble.left', selected: 'bubble.left.fill' }} md="chat_bubble" />
+        {unread > 0 && <NativeTabs.Trigger.Badge>{String(unread)}</NativeTabs.Trigger.Badge>}
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="projects" disableAutomaticContentInsets={manualInsets}>
         <NativeTabs.Trigger.Label>Projects</NativeTabs.Trigger.Label>
@@ -31,10 +35,6 @@ export default function TabLayout() {
       <NativeTabs.Trigger name="calendar" disableAutomaticContentInsets={manualInsets}>
         <NativeTabs.Trigger.Label>Calendar</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="calendar" md="calendar_month" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile" disableAutomaticContentInsets={manualInsets}>
-        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }} md="account_circle" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );
