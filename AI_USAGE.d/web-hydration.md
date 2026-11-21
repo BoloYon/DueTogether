@@ -1,0 +1,1 @@
+- 2026-11-21 · Web hydration · OpenAI Codex reproduced the React warning in headless Chrome, updated the appearance snapshot and campus loading view, and ran browser QA, typecheck, lint, and tests. The user supplied the baseline, worktree, code scope, and suspected cause.
