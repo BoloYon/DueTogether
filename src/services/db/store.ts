@@ -1,5 +1,7 @@
 import { advanceCampus, transitionCampus } from '../../shared/mockCampus';
-import { makeCampusFixtures } from '../../shared/mockData';
+import { recordContributionCredits } from '../../shared/contributions';
+import { campusMediaKeys } from '../../shared/profile-media';
+import { makeCampusFixtures, makeSampleCollections } from '../../shared/mockData';
 import type { CampusAdapter, CampusState, Clock } from '../../shared/types';
 
 export const CAMPUS_STORAGE_KEY = '@duetogether/campus/v1';
@@ -9,29 +11,35 @@ type CampusStorage = {
   setItem(key: string, value: string): Promise<void>;
 };
 
-type Snapshot = { version: 1; sequence: number; state: CampusState };
+type Snapshot = { version: 2; sequence: number; state: CampusState };
 
-function decode(raw: string | null): Snapshot | undefined {
+function decode(raw: string | null): (Snapshot & { migrated: boolean }) | undefined {
   if (raw === null) return;
   try {
-    const value = JSON.parse(raw) as Partial<Snapshot> | null;
+    const value = JSON.parse(raw) as (Partial<Omit<Snapshot, 'version'>> & { version?: number }) | null;
     const state = value?.state;
-    if (value?.version === 1 && typeof value.sequence === 'number'
+    if ((value?.version === 1 || value?.version === 2) && typeof value.sequence === 'number'
       && Number.isSafeInteger(value.sequence) && value.sequence >= 0 && state
       && typeof state.currentUser?.id === 'string'
       && [state.people, state.sessions, state.savedSessionIds, state.posts, state.threads,
         state.projects, state.memberships, state.invites, state.notifications].every(Array.isArray)
       && state.availability && typeof state.availability === 'object'
       && state.postToThread && typeof state.postToThread === 'object') {
-      return { version: 1, sequence: value.sequence, state };
+      const migrated = value.version === 1;
+      const upgraded = {
+        ...state,
+        collections: Array.isArray(state.collections) ? state.collections : makeSampleCollections(),
+        contributionCredits: Array.isArray(state.contributionCredits) ? state.contributionCredits : [],
+      };
+      return { version: 2, sequence: value.sequence, state: recordContributionCredits(upgraded), migrated };
     }
   } catch {
     // An unreadable snapshot can be replaced with fresh sample data.
   }
 }
 
-export async function openCampusStore(storage: CampusStorage, clock: Clock = Date.now) {
-  let snapshot: Snapshot | undefined;
+export async function openCampusStore(storage: CampusStorage, clock: Clock = Date.now, removeMedia?: (key: string) => Promise<void>) {
+  let snapshot: ReturnType<typeof decode>;
   let canWrite = true;
   try {
     snapshot = decode(await storage.getItem(CAMPUS_STORAGE_KEY));
@@ -41,6 +49,8 @@ export async function openCampusStore(storage: CampusStorage, clock: Clock = Dat
   }
 
   let state = snapshot?.state ?? makeCampusFixtures(clock);
+  let currentMedia = campusMediaKeys(state);
+  const retiredMedia = new Set<string>();
   let sequence = snapshot?.sequence ?? 0;
   let writes = Promise.resolve();
   let dirty = false;
@@ -48,11 +58,23 @@ export async function openCampusStore(storage: CampusStorage, clock: Clock = Dat
 
   function persist() {
     if (!canWrite) return;
-    const serialized = JSON.stringify({ version: 1, sequence, state } satisfies Snapshot);
+    const serialized = JSON.stringify({ version: 2, sequence, state } satisfies Snapshot);
+    const savedMedia = currentMedia;
     dirty = false;
     writes = writes.then(async () => {
       await storage.setItem(CAMPUS_STORAGE_KEY, serialized);
       dirty = false;
+      if (removeMedia && retiredMedia.size) {
+        for (const key of retiredMedia) {
+          if (savedMedia.has(key) || currentMedia.has(key)) continue;
+          try {
+            await removeMedia(key);
+            retiredMedia.delete(key);
+          } catch {
+            // Retry cleanup after the next successful snapshot.
+          }
+        }
+      }
     }).catch(() => {
       dirty = true;
     });
@@ -63,6 +85,9 @@ export async function openCampusStore(storage: CampusStorage, clock: Clock = Dat
       if (dirty) persist();
       return;
     }
+    const nextMedia = campusMediaKeys(next);
+    for (const key of currentMedia) if (!nextMedia.has(key)) retiredMedia.add(key);
+    currentMedia = nextMedia;
     state = next;
     persist();
     listeners.forEach(listener => listener());
@@ -82,7 +107,7 @@ export async function openCampusStore(storage: CampusStorage, clock: Clock = Dat
   };
 
   const restored = advanceCampus(state, clock());
-  if (!snapshot || restored !== state) {
+  if (!snapshot || snapshot.migrated || restored !== state) {
     state = restored;
     persist();
   }
