@@ -6,7 +6,7 @@ import { advanceCampus, transitionCampus } from '@/shared/mockCampus';
 import { makeCampusFixtures } from '@/shared/mockData';
 import { findAvailabilityOverlaps } from '@/shared/selectors';
 import type { CampusAction, CampusState } from '@/shared/types';
-import { buildWindow, connectState, inviteDraftFromMatch, inviteForMatch, isContact, minuteToInput, myWindows, searchPartners, windowPassed } from './logic';
+import { availabilityError, buildWindow, connectState, inviteDraftFromMatch, inviteForMatch, isContact, minuteToInput, myWindows, searchPartners, windowPassed } from './logic';
 import { atMinute, dayKeyOf, parseTimeOfDay } from '@/components/campus/format';
 
 const now = new Date(2026, 10, 21, 12).getTime();
@@ -26,11 +26,11 @@ test('first contact creates one thread with intro; second post reuses it; same p
   const devThreadId = result.id!;
   assert.equal(state.threads.filter(thread => thread.personId === 'dev').length, 1);
   assert.equal(isContact(state, 'dev'), true);
-  assert.equal(connectState(state, state.posts.find(post => post.id === 'dev-1')!).threadId, devThreadId, 'button becomes Open chat');
+  assert.equal(connectState(state, state.posts.find(post => post.id === 'dev-1')!).threadId, devThreadId, 'button becomes Message');
 
   // Mira already has a thread from mira-1; connecting on mira-2 reuses it and adds context.
   const mira2 = state.posts.find(post => post.id === 'mira-2')!;
-  assert.equal(connectState(state, mira2).label, 'Connect (adds to chat)');
+  assert.equal(connectState(state, mira2).label, 'Connect');
   [state, result] = run(state, { type: 'post/connect', postId: 'mira-2' });
   assert.deepEqual(result, { ok: true, id: 'thread-mira' });
   const mira = state.threads.find(thread => thread.id === 'thread-mira')!;
@@ -146,4 +146,13 @@ test('polish: sending a match computed from a stale clock still starts in the fu
   assert.ok(draft.startsAt > pressed && draft.endsAt === atMinute(day, match.endMinute));
   const [, result] = run(state, { type: 'invite/send', draft }, pressed);
   assert.ok(result.ok, 'stale render time no longer makes the invite invalid');
+});
+
+test('calendar editor rejects already-started windows and preserves valid future ranges', () => {
+  const date = dayKeyOf(new Date(2026, 10, 21).getTime());
+  const noon = new Date(2026, 10, 21, 12).getTime();
+  assert.match(availabilityError({ date, startMinute: 700, endMinute: 800 }, noon) ?? '', /start time has passed/);
+  assert.match(availabilityError({ date, startMinute: 960, endMinute: 960 }, noon) ?? '', /end time must be after/);
+  assert.equal(availabilityError({ date, startMinute: 960, endMinute: 1080 }, noon), null);
+  assert.equal(availabilityError({ date, startMinute: 1380, endMinute: 1440 }, noon), null);
 });

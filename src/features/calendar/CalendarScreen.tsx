@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TabPage } from '@/components/campus/TabPage';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { useCalendar } from '@/shared/adapters';
 import { routes } from '@/shared/navigation';
 import type { CalendarAdapter, Clock, DayKey } from '@/shared/types';
@@ -90,11 +91,10 @@ export function CalendarScreen({ clock }: { clock?: Clock } = {}) {
 
   const noItems = calendar.items.length === 0;
 
-  return <ScrollView style={{ backgroundColor: palette.page }} contentContainerStyle={styles.content}
+  return <TabPage title="Calendar" style={{ backgroundColor: palette.page }} contentContainerStyle={styles.content}
     refreshControl={calendar.mode === 'live' ? <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.accent} /> : undefined}>
     <View style={styles.headerRow}>
       <Txt variant="small" tone="secondary" style={styles.flex}>Only you can see your coursework here.</Txt>
-      <IconButton icon="gear" label="Calendar settings" onPress={() => router.push(routes.calendarSettings)} />
     </View>
     <CalendarStatus calendar={calendar} now={now} />
 
@@ -131,7 +131,7 @@ export function CalendarScreen({ clock }: { clock?: Clock } = {}) {
             ? <EmptyState title="Nothing on this day" body={examsOnly ? 'No exams or quizzes. Turn off the filter to see all coursework.' : 'Pick a day with a marker to see its coursework.'} />
             : byDay.get(selected)!.map(item => <CanvasItemRow key={item.id} item={item} now={now} sample={sample} />)}
         </Reveal>}
-  </ScrollView>;
+  </TabPage>;
 }
 
 function dayHeading(key: DayKey, now: number) {

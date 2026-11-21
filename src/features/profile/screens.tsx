@@ -1,3 +1,5 @@
+import { TabPage } from '@/components/campus/TabPage';
+import { appearanceOptions, useAppearance } from '@/hooks/appearance';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -5,7 +7,6 @@ import { View } from 'react-native';
 import {
   Avatar, Badge, Body, Button, Card, ErrorBanner, ListRow, Notice, Row, Screen, Section, TextField, Title, formatWhen, useNow,
 } from '@/components/campus';
-import { unreadNotificationCount } from '@/features/notifications/logic';
 import { describeSession } from '@/features/sessions/logic';
 import { useCampus } from '@/shared/adapters';
 import { routes } from '@/shared/navigation';
@@ -35,9 +36,8 @@ export function ProfileScreen() {
   const now = useNow();
   const user = state.currentUser;
   const sections = profileSections(state, now);
-  const unread = unreadNotificationCount(state);
   return (
-    <Screen title="Profile">
+    <TabPage title="Profile" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <Row>
         <Avatar name={user.name} initials={user.initials} size={64} />
         <View style={{ flex: 1, gap: 2 }}>
@@ -46,13 +46,6 @@ export function ProfileScreen() {
         </View>
       </Row>
       <Row wrap>{user.courses.map(course => <Badge key={course} label={course} tone="accent" />)}</Row>
-      <Row>
-        <Button flex variant="secondary" label="Edit profile" onPress={() => router.push(routes.profileSettings)} />
-        <Button flex variant="secondary" label={unread ? `Notifications (${unread})` : 'Notifications'}
-          accessibilityLabel={unread ? `Notifications, ${unread} unread` : 'Notifications'}
-          onPress={() => router.push(routes.notifications)} />
-      </Row>
-
       <Section title="Going" count={sections.going.length}>
         <SessionRows sessions={sections.going} empty="Join a session from the Feed to see it here." />
       </Section>
@@ -86,11 +79,12 @@ export function ProfileScreen() {
             onPress={() => router.push(routes.project(project.id))} accessibilityHint="Opens project" />
         )) : <Body secondary>You are not on a project team yet.</Body>}
       </Section>
-    </Screen>
+      <ResetDemoData />
+    </TabPage>
   );
 }
 
-export function ProfileSettingsScreen() {
+function ResetDemoData() {
   const { dispatch } = useCampus();
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetCount, setResetCount] = useState(0);
@@ -101,16 +95,12 @@ export function ProfileSettingsScreen() {
     setConfirmReset(false);
     if (!result.ok) { setFailure(result.message); return; }
     setFailure(null);
-    // Remount the profile form so it reloads the restored sample profile.
     setResetCount(count => count + 1);
   };
 
   return (
-    <Screen title="Profile settings">
-      <ProfileForm key={resetCount} />
-
       <Section title="Demo data">
-        <Body secondary>Reset restores the fictional sample sessions, posts, chats, projects, availability, invites and notifications on this device. Your Canvas connection and calendar are not affected.</Body>
+        <Body secondary>Reset restores the fictional sample sessions, posts, chats, projects, availability, invites and notifications on this device. Your Canvas connection, calendar and appearance are kept.</Body>
         {resetCount > 0 && <Notice tone="success">Demo data reset.</Notice>}
         <ErrorBanner message={failure} />
         {confirmReset ? (
@@ -126,8 +116,22 @@ export function ProfileSettingsScreen() {
           <Button variant="danger" label="Reset demo data" accessibilityHint="Asks for confirmation first" onPress={() => setConfirmReset(true)} />
         )}
       </Section>
-    </Screen>
   );
+}
+
+export function ProfileSettingsScreen() {
+  const { choice, select } = useAppearance();
+  return <Screen title="Profile settings">
+    <Section title="Appearance">
+      <Card>
+        {appearanceOptions.map(option => <ListRow key={option}
+          title={option[0].toUpperCase() + option.slice(1)}
+          selected={choice === option}
+          trailing={choice === option ? <Body bold>✓</Body> : undefined} onPress={() => select(option)} />)}
+      </Card>
+    </Section>
+    <ProfileForm />
+  </Screen>;
 }
 
 function ProfileForm() {

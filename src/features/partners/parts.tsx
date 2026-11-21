@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
 import {
-  Avatar, Badge, Body, Button, Card, ErrorBanner, ListRow, Row, formatAgo, formatDayLabel, formatMinuteOfDay, formatClock, formatWhen, useNow,
+  Avatar, Badge, Body, Button, Card, ErrorBanner, ListRow, Row, formatAgo, formatDayLabel, formatMinuteOfDay, formatTimeRange, formatClock, formatWhen, useNow,
 } from '@/components/campus';
 import { useCampus } from '@/shared/adapters';
 import { routes } from '@/shared/navigation';
@@ -66,7 +66,7 @@ export function PersonRow({ person, subtitle }: { person: User; subtitle?: strin
 }
 
 export function windowLabel(window: { date: string; startMinute: number; endMinute: number }, now: number) {
-  return `${formatDayLabel(window.date, now)} · ${formatMinuteOfDay(window.startMinute)} – ${formatMinuteOfDay(window.endMinute)}`;
+  return `${formatDayLabel(window.date, now)} · ${formatTimeRange(formatMinuteOfDay(window.startMinute), formatMinuteOfDay(window.endMinute))}`;
 }
 
 /** Overlapping free time with a classmate, with a Send invite action. */

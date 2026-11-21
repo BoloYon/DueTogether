@@ -1,3 +1,4 @@
+import { IconButton } from '@/features/feed/ui';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
@@ -37,22 +38,10 @@ export function SessionScreen({ id }: DetailParams) {
   return (
     <Screen
       title={session.title}
-      footer={
-        <Row>
-          {view.attendance && (
-            <Button flex label={view.attendance.label} variant={view.attendance.action === 'session/leave' ? 'secondary' : 'primary'}
-              onPress={() => run(view.attendance!.action)} />
-          )}
-          <Button
-            flex={!view.attendance}
-            label={view.saved ? 'Saved' : 'Save'}
-            accessibilityLabel={view.saved ? 'Unsave session' : 'Save session'}
-            accessibilityHint="Saving is separate from joining"
-            variant="secondary"
-            onPress={() => run(view.saved ? 'session/unsave' : 'session/save')}
-          />
-        </Row>
-      }>
+      headerRight={() => <IconButton icon={view.saved ? 'bookmark-fill' : 'bookmark'} selected={view.saved}
+        label={view.saved ? 'Remove saved session' : 'Save session'} onPress={() => run(view.saved ? 'session/unsave' : 'session/save')} />}
+      footer={view.attendance && <Button label={view.attendance.label}
+        variant={view.attendance.action === 'session/leave' ? 'secondary' : 'primary'} onPress={() => run(view.attendance!.action)} />}>
       <Row wrap>
         <Badge label={view.phaseLabel} tone={view.phase === 'live' ? 'live' : view.phase === 'ended' ? 'neutral' : 'accent'} />
         {view.hosting && <Badge label="Hosting" tone="success" />}

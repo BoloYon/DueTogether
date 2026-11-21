@@ -1,7 +1,6 @@
 /** Pure display helpers for campus screens. No React or native imports. */
 
 const MINUTE = 60_000;
-const DAY = 86_400_000;
 
 export function pad2(value: number) {
   return String(value).padStart(2, '0');
@@ -14,6 +13,11 @@ export function formatMinuteOfDay(minute: number) {
   const suffix = hours >= 12 ? 'PM' : 'AM';
   const display = hours % 12 === 0 ? 12 : hours % 12;
   return minute === 1440 ? '12:00 AM (midnight)' : `${display}:${pad2(mins)} ${suffix}`;
+}
+
+export function formatTimeRange(start: string, end: string) {
+  const samePeriod = start.slice(-3) === end.slice(-3);
+  return (samePeriod ? start.slice(0, -3) : start) + '–' + end;
 }
 
 /** Parse "14:30", "2:30 pm", "9am" into minutes after local midnight. */
@@ -92,19 +96,18 @@ export function formatWhen(epoch: number, now: number) {
 
 export function formatDuration(ms: number) {
   const minutes = Math.max(0, Math.round(ms / MINUTE));
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes >= 1440) return `${Math.floor(minutes / 1440)}d`;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest ? `${hours} h ${rest} min` : `${hours} h`;
+  return rest ? `${hours}h ${rest}m` : `${hours}h`;
 }
 
-/** "just now", "5 min ago", "3 h ago", "2 d ago". */
+/** Compact relative age. */
 export function formatAgo(epoch: number, now: number) {
   const diff = now - epoch;
   if (diff < MINUTE) return 'just now';
-  if (diff < 60 * MINUTE) return `${Math.floor(diff / MINUTE)} min ago`;
-  if (diff < DAY) return `${Math.floor(diff / (60 * MINUTE))} h ago`;
-  return `${Math.floor(diff / DAY)} d ago`;
+  return `${formatDuration(Math.floor(diff / MINUTE) * MINUTE)} ago`;
 }
 
 export function initialsOf(name: string, fallback?: string) {

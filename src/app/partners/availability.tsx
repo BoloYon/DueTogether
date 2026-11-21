@@ -1,1 +1,1 @@
-export { AvailabilityScreen as default } from '@/features/partners';
+export { AvailabilityEditor as default } from '@/features/partners/AvailabilityEditor';

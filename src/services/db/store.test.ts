@@ -75,7 +75,7 @@ test('keeps one thread per person and delivers the reply without a chat screen',
   now += 1;
   t.mock.timers.tick(1);
   assert.equal(thread()?.pendingReply, undefined);
-  assert.match(thread()?.messages.at(-1)?.text ?? '', /Simulated reply/);
+  assert.match(thread()?.messages.at(-1)?.text ?? '', /^Thanks for reaching out!$/);
   assert.ok(thread()!.messages.at(-1)!.sentAt > thread()!.readAt!);
   await store.flush();
   const reopened = await openCampusStore(storage, () => now + 5_000);

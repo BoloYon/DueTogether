@@ -1,18 +1,18 @@
+import { TabPage } from '@/components/campus/TabPage';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
 import {
-  Avatar, Badge, Body, Button, Card, Choices, EmptyState, ErrorBanner, ListRow, Notice, Row, Screen, Section, TextField, Title,
-  formatAgo, formatDayLabel, formatWhen, upcomingDayKeys, useNow,
+  Avatar, Badge, Body, Button, EmptyState, ListRow, Notice, Row, Screen, Section, TextField, Title,
+  formatAgo, formatWhen, useNow,
 } from '@/components/campus';
 import { threadSummaries } from '@/features/chat/logic';
 import { useCampus } from '@/shared/adapters';
 import { routes, type DetailParams } from '@/shared/navigation';
 import { findAvailabilityOverlaps, findThreadByPerson, normalizeCourse } from '@/shared/selectors';
-import type { AvailabilityWindow } from '@/shared/types';
-import { buildWindow, coursesForAvailability, isContact, myWindows, postsByAuthor, searchPartners, sortedInvites, minuteToInput, windowPassed } from './logic';
-import { InviteRow, MatchCard, PersonRow, PostCard, windowLabel } from './parts';
+import { coursesForAvailability, isContact, postsByAuthor, searchPartners, sortedInvites } from './logic';
+import { InviteRow, MatchCard, PersonRow, PostCard } from './parts';
 
 /* ---------------- Partners tab ---------------- */
 
@@ -24,10 +24,9 @@ export function PartnersScreen() {
   const posts = searchPartners(state, '').posts;
   const pendingInvites = state.invites.filter(invite => invite.status === 'pending').length;
   return (
-    <Screen title="Partners">
+    <TabPage title="Partners" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <Row wrap>
-        <Button label="Find partners" onPress={() => router.push(routes.partnerFind)} />
-        <Button label="Availability" variant="secondary" onPress={() => router.push(routes.partnerAvailability)} />
+        <Button label="Find a Study Match" onPress={() => router.push(routes.partnerFind)} />
         <Button label={pendingInvites ? `Invites (${pendingInvites})` : 'Invites'} variant="secondary"
           accessibilityLabel={pendingInvites ? `Study invites, ${pendingInvites} pending` : 'Study invites'}
           onPress={() => router.push(routes.partnerInvite)} />
@@ -39,7 +38,7 @@ export function PartnersScreen() {
             key={thread.id}
             leading={<Avatar name={person?.name ?? '?'} initials={person?.initials} />}
             title={person?.name ?? 'Classmate'}
-            subtitle={thread.pendingReply ? 'Typing… (simulated)' : last ? `${last.authorId === state.currentUser.id ? 'You: ' : ''}${last.text}` : 'No messages yet'}
+            subtitle={thread.pendingReply ? 'Typing…' : last ? `${last.authorId === state.currentUser.id ? 'You: ' : ''}${last.text}` : 'No messages yet'}
             meta={last ? formatAgo(last.sentAt, now) : undefined}
             trailing={unread ? <Badge label={String(unread)} tone="accent" accessibilityLabel={`${unread} unread`} /> : undefined}
             onPress={() => router.push(routes.chat(thread.id))}
@@ -59,32 +58,7 @@ export function PartnersScreen() {
         {state.people.map(person => <PersonRow key={person.id} person={person} />)}
       </Section>
       <Notice tone="neutral">Fictional classmates for the demo. Nothing leaves this device.</Notice>
-    </Screen>
-  );
-}
-
-/* ---------------- Find partners ---------------- */
-
-export function PartnerFindScreen() {
-  const { state } = useCampus();
-  const [query, setQuery] = useState('');
-  const [course, setCourse] = useState('all');
-  const courseOptions = [...new Set([...state.currentUser.courses, ...state.people.flatMap(person => person.courses)].map(normalizeCourse))];
-  const results = searchPartners(state, query, course === 'all' ? undefined : course);
-  return (
-    <Screen title="Find partners">
-      <TextField label="Search" value={query} onChangeText={setQuery} placeholder="Course, topic or name" autoCapitalize="none" />
-      <Choices label="Course" value={course} onChange={setCourse}
-        options={[{ value: 'all', label: 'All' }, ...courseOptions.map(item => ({ value: item, label: item }))]} />
-      <Section title="Posts" count={results.posts.length}>
-        {results.posts.length ? results.posts.map(post => <PostCard key={post.id} post={post} />)
-          : <EmptyState title="No matching posts" body="Try another course or clear the search." />}
-      </Section>
-      <Section title="People" count={results.people.length}>
-        {results.people.length ? results.people.map(person => <PersonRow key={person.id} person={person} />)
-          : <EmptyState title="No matching classmates" body="Search by name or a course code like MAT 240." />}
-      </Section>
-    </Screen>
+    </TabPage>
   );
 }
 
@@ -145,96 +119,6 @@ export function PersonScreen({ id }: DetailParams) {
           ))}
         </Section>
       )}
-    </Screen>
-  );
-}
-
-/* ---------------- Availability ---------------- */
-
-export function AvailabilityScreen() {
-  const { state, dispatch } = useCampus();
-  const now = useNow();
-  const courses = coursesForAvailability(state);
-  const [course, setCourse] = useState(courses[0] ?? '');
-  const days = upcomingDayKeys(now, 7);
-  const [day, setDay] = useState(days[0]);
-  const [start, setStart] = useState('10:00');
-  const [end, setEnd] = useState('12:00');
-  const [editing, setEditing] = useState<AvailabilityWindow | null>(null);
-  const [fieldError, setFieldError] = useState<{ field: string; error: string } | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
-  const windows = course ? myWindows(state, course) : [];
-  const matches = course ? findAvailabilityOverlaps(state, course, now) : [];
-
-  const reset = () => { setEditing(null); setFieldError(null); setFailure(null); };
-  const save = () => {
-    const built = buildWindow(day, start, end, Date.now());
-    if (!built.ok) { setFieldError(built); return; }
-    const result = dispatch({ type: 'availability/upsert', course, window: built.window, ...(editing ? { previous: editing } : {}) });
-    if (!result.ok) { setFailure(result.message); return; }
-    reset();
-  };
-  const edit = (window: AvailabilityWindow) => {
-    setEditing(window);
-    setDay(window.date);
-    setStart(minuteToInput(window.startMinute));
-    setEnd(minuteToInput(window.endMinute));
-    setFieldError(null);
-  };
-  const remove = (window: AvailabilityWindow) => {
-    const result = dispatch({ type: 'availability/remove', course, window });
-    setFailure(result.ok ? null : result.message);
-    if (editing && editing.date === window.date && editing.startMinute === window.startMinute) reset();
-  };
-  const dayOptions = [...new Set([...days, ...(editing ? [editing.date] : [])])];
-
-  return (
-    <Screen title="Availability">
-      <Body secondary>Add when you are free for a course. Overlaps with classmates on the same day appear below, earliest first.</Body>
-      {courses.length ? (
-        <Choices label="Course" value={course} onChange={value => { setCourse(value); reset(); }} options={courses.map(item => ({ value: item, label: item }))} />
-      ) : <EmptyState title="No courses" body="Add courses to your profile to share availability." />}
-
-      <Section title="Your free time" count={windows.length}>
-        {windows.length ? windows.map(window => {
-          return (
-            <Card key={`${window.date}-${window.startMinute}-${window.endMinute}`}>
-              <Body bold>{windowLabel(window, now)}</Body>
-              {windowPassed(window, now) && <Badge label="Passed · not used for matches" />}
-              <Row>
-                <Button flex compact variant="secondary" label="Edit" accessibilityLabel={`Edit ${windowLabel(window, now)}`} onPress={() => edit(window)} />
-                <Button flex compact variant="danger" label="Remove" accessibilityLabel={`Remove ${windowLabel(window, now)}`} onPress={() => remove(window)} />
-              </Row>
-            </Card>
-          );
-        }) : <Body secondary>No windows for {course || 'this course'} yet.</Body>}
-      </Section>
-
-      <Section title={editing ? 'Edit window' : 'Add a window'}>
-        <Choices label="Day" value={day} onChange={setDay} error={fieldError?.field === 'day' ? fieldError.error : undefined}
-          options={dayOptions.map(key => ({ value: key, label: formatDayLabel(key, now) }))} />
-        <Row style={{ alignItems: 'flex-start' }}>
-          <View style={{ flex: 1 }}>
-            <TextField label="From" value={start} onChangeText={setStart} placeholder="10:00" maxLength={8}
-              error={fieldError?.field === 'start' ? fieldError.error : undefined} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <TextField label="To" value={end} onChangeText={setEnd} placeholder="12:00" maxLength={8}
-              error={fieldError?.field === 'end' ? fieldError.error : undefined} />
-          </View>
-        </Row>
-        <ErrorBanner message={failure} />
-        <Row>
-          <Button flex label={editing ? 'Update window' : 'Add window'} onPress={save} disabled={!course} />
-          {editing && <Button flex variant="secondary" label="Cancel" onPress={reset} />}
-        </Row>
-      </Section>
-
-      <Section title="Matches" count={matches.length}>
-        {matches.length ? matches.map(match => <MatchCard key={`${match.personId}-${match.date}-${match.startMinute}`} match={match} />)
-          : <EmptyState title="No overlaps yet" body="Add a window on a day classmates are free. Matches only count time that has not passed." />}
-      </Section>
-      <Notice tone="neutral">Classmate schedules are fictional sample data. Invites are accepted by a simulation.</Notice>
     </Screen>
   );
 }

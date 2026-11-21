@@ -57,7 +57,7 @@ export function transitionCampus(state: CampusState, action: CampusAction, now: 
       const thread: Thread = existing ? { ...existing, postIds: [...existing.postIds, post.id] } : {
         id, personId: post.authorId, postIds: [post.id],
         messages: [{ id: id + '-intro', authorId: user.id, text: 'Hi! I saw your partner post.', sentAt: now, course: post.course }],
-        pendingReply: { id: id + '-reply', text: 'Thanks for reaching out! (Simulated reply)', dueAt: now + 1_200, course: post.course },
+        pendingReply: { id: id + '-reply', text: 'Thanks for reaching out!', dueAt: now + 1_200, course: post.course },
       };
       return done({ threads: existing ? updateThread(thread) : [...state.threads, thread], postToThread: { ...state.postToThread, [post.id]: thread.id } }, thread.id);
     }
@@ -71,7 +71,7 @@ export function transitionCampus(state: CampusState, action: CampusAction, now: 
       const { course } = action;
       return done({ threads: updateThread({
         ...thread, messages: [...thread.messages, { id, authorId: user.id, text, sentAt: now, course }],
-        pendingReply: thread.pendingReply ?? { id: id + '-reply', text: 'Sounds good. (Simulated reply)', dueAt: now + 1_200, course },
+        pendingReply: thread.pendingReply ?? { id: id + '-reply', text: 'Sounds good.', dueAt: now + 1_200, course },
       }) }, id);
     }
     case 'availability/upsert':

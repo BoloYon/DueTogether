@@ -53,7 +53,7 @@ export interface LegendEntry { key: string; shape: NodeShape | 'contact-line' | 
 
 export interface GraphModel { section: SectionKey; nodes: GraphNode[]; links: GraphLink[]; legend: LegendEntry[]; summary: string }
 
-export const SIZES = { planet: 30, moon: 15, diamond: 27, canvas: 16, capsuleHalfWidth: 44, capsuleHalfHeight: 14, hexagon: 25 } as const;
+export const SIZES = { planet: 30, moon: 15, diamond: 33, canvas: 16, capsuleHalfWidth: 44, capsuleHalfHeight: 14, hexagon: 25 } as const;
 const CHAR = 6.2;
 const LINE = 14;
 

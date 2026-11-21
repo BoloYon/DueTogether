@@ -1,3 +1,4 @@
+import { TabPage } from '@/components/campus/TabPage';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
@@ -57,19 +58,17 @@ function ProjectCard({ project }: { project: Project }) {
 
 export function ProjectsScreen() {
   const { state } = useCampus();
-  const router = useRouter();
   const [filter, setFilter] = useState<'all' | 'mine'>('all');
   const projects = sortedProjects(state, filter);
   return (
-    <Screen title="Projects">
+    <TabPage title="Projects" contentContainerStyle={{ padding: 16, gap: 16 }}>
       <Segmented label="Show projects" value={filter} onChange={setFilter}
         options={[{ value: 'all', label: 'All' }, { value: 'mine', label: 'Yours & requested' }]} />
-      <Button label="New project" onPress={() => router.push(routes.create({ kind: 'project' }))} />
       {projects.length ? projects.map(project => <ProjectCard key={project.id} project={project} />)
         : <EmptyState title={filter === 'mine' ? 'Nothing here yet' : 'No projects yet'}
           body={filter === 'mine' ? 'Ask to join a project or create one.' : 'Create the first project and list the roles you need.'} />}
       <Notice tone="neutral">Sample projects with fictional students. Requests stay on this device.</Notice>
-    </Screen>
+    </TabPage>
   );
 }
 

@@ -45,7 +45,7 @@ test('full, ended and hosting sessions expose no attendance action', () => {
   const upcoming = describeSession(session(state, 'upcoming'), state, now);
   assert.equal(upcoming.saved, true);
   assert.equal(upcoming.placeText, 'Online');
-  assert.match(upcoming.timingText, /^Starts in 2 h$/);
+  assert.match(upcoming.timingText, /^Starts in 2h$/);
 });
 
 test('Canvas "Study for this" params prefill a session draft that creates a hosted session', () => {

@@ -94,7 +94,7 @@ export function ChatScreen({ id }: DetailParams) {
           })}
           {thread.pendingReply && (
             <View accessibilityLiveRegion="polite" style={[styles.bubble, styles.left, { backgroundColor: palette.bubbleIn }]}>
-              <Text style={{ color: palette.textSecondary, fontStyle: 'italic' }}>{name} is typing… (simulated)</Text>
+              <Text style={{ color: palette.textSecondary, fontStyle: 'italic' }}>{name} is typing…</Text>
             </View>
           )}
         </View>
@@ -131,10 +131,10 @@ function Bubble({ message, mine, authorName }: { message: Message; mine: boolean
   const palette = usePalette();
   const color = mine ? palette.onBubbleOut : palette.text;
   return (
-    <View accessible accessibilityLabel={`${mine ? 'You' : authorName}, ${formatClock(message.sentAt)}${message.course ? `, ${message.course}` : ''}: ${message.text}`}
+    <View accessible accessibilityLabel={`${mine ? 'You' : authorName}, ${formatClock(message.sentAt)}${message.course ? `, ${message.course}` : ''}: ${mine ? message.text : message.text.replace(/ \(Simulated reply\)$/, '')}`}
       style={[styles.bubble, mine ? styles.right : styles.left, { backgroundColor: mine ? palette.bubbleOut : palette.bubbleIn }]}>
       {message.course && <Text style={[styles.meta, { color, fontWeight: '700' }]}>{message.course}</Text>}
-      <Text style={{ color, fontSize: 16, lineHeight: 22 }}>{message.text}</Text>
+      <Text style={{ color, fontSize: 16, lineHeight: 22 }}>{mine ? message.text : message.text.replace(/ \(Simulated reply\)$/, '')}</Text>
       <Text style={[styles.meta, { color, textAlign: 'right' }]}>{formatClock(message.sentAt)}</Text>
     </View>
   );

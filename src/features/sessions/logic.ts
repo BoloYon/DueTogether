@@ -1,4 +1,4 @@
-import { formatClock, formatDayLabel, formatDuration, dayKeyOf, plural } from '@/components/campus/format';
+import { formatClock, formatTimeRange, formatDayLabel, formatDuration, dayKeyOf, plural } from '@/components/campus/format';
 import { sessionState } from '@/shared/selectors';
 import type { CampusState, Id, StudySession, User } from '@/shared/types';
 
@@ -46,7 +46,7 @@ export function describeSession(session: StudySession, state: CampusState, now: 
   else attendance = { action: 'session/join', label: phase === 'live' ? 'Join now' : 'Join session' };
 
   const day = formatDayLabel(dayKeyOf(session.startsAt), now);
-  const whenText = `${day} · ${formatClock(session.startsAt)} – ${formatClock(session.endsAt)}`;
+  const whenText = `${day} · ${formatTimeRange(formatClock(session.startsAt), formatClock(session.endsAt))}`;
   const timingText = phase === 'live'
     ? `${formatDuration(session.endsAt - now)} left`
     : phase === 'upcoming' ? `Starts in ${formatDuration(session.startsAt - now)}` : 'Ended';
