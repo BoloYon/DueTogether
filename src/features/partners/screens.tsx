@@ -1,13 +1,13 @@
 import { ConnectionNotice, useConnectionNotice } from '@/features/chat/ConnectionNotice';
 import { FilterChip } from '@/features/feed/ui';
+import { ProfileCollections } from '@/features/profile/collections';
+import { ProfileHeader } from '@/features/profile/profile-header';
 import { TabPage } from '@/components/campus/TabPage';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
 
 import {
-  Avatar, Badge, Body, Button, EmptyState, ListRow, Notice, Row, Screen, Section, TextField, Title,
-  formatWhen, useNow,
+  Badge, Body, Button, EmptyState, ListRow, Notice, Row, Screen, Section, TextField, formatWhen, useNow,
 } from '@/components/campus';
 import { useCampus } from '@/shared/adapters';
 import { routes, type DetailParams } from '@/shared/navigation';
@@ -104,18 +104,15 @@ export function PersonScreen({ id }: DetailParams) {
     .sort((left, right) => left.startsAt - right.startsAt);
   return (
     <Screen title={person.name}>
-      <Row>
-        <Avatar name={person.name} initials={person.initials} size={64} dashed={!known} />
-        <View style={{ flex: 1, gap: 4 }}>
-          <Title>{person.name}</Title>
-          {(person.major || person.year) && <Body secondary>{[person.major, person.year].filter(Boolean).join(' · ')}</Body>}
-          <Badge label={known ? 'In your messages' : 'New to you'} tone={known ? 'success' : 'neutral'} />
-        </View>
-      </Row>
+      <ProfileHeader user={person} dashed={!known}>
+        <Badge label={known ? 'In your messages' : 'New to you'} tone={known ? 'success' : 'neutral'} />
+      </ProfileHeader>
       <Row wrap>{person.courses.map(course => <Badge key={course} label={course} tone={shared.includes(normalizeCourse(course)) ? 'accent' : 'neutral'} />)}</Row>
       {thread
         ? <Button label="Message" onPress={() => router.push(routes.chat(thread.id))} accessibilityLabel={`Message ${person.name}`} />
         : <Notice tone="accent">Connect on one of {person.name.split(' ')[0]}’s posts to start a conversation.</Notice>}
+
+      <ProfileCollections ownerId={person.id} />
 
       <Section title="Partner posts" count={posts.length}>
         {posts.length ? posts.map(post => <PostCard key={post.id} post={post} showAuthor={false} />)

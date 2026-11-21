@@ -6,12 +6,17 @@ import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
 import {
-  Avatar, Badge, Body, Button, Card, ErrorBanner, ListRow, Notice, Row, Screen, Section, TextField, Title, formatWhen, useNow,
+  Badge, Body, Button, Card, ErrorBanner, ListRow, Notice, Row, Screen, Section, TextField, formatWhen, useNow,
 } from '@/components/campus';
 import { describeSession } from '@/features/sessions/logic';
 import { useCampus } from '@/shared/adapters';
+import { hasContributionCredit } from '@/shared/contributions';
+import { BIO_LIMIT, countGraphemes } from '@/shared/profile-media';
 import { routes } from '@/shared/navigation';
-import type { StudySession } from '@/shared/types';
+import type { ContributionKind, StudySession } from '@/shared/types';
+import { ProfileCollections } from './collections';
+import { ProfileHeader } from './profile-header';
+import { useMediaPicker } from './media';
 import { MAJOR_MAX, NAME_MAX, profileSections, validateProfile } from './logic';
 
 function SessionRows({ sessions, empty }: { sessions: StudySession[]; empty: string }) {
@@ -34,27 +39,38 @@ function SessionRows({ sessions, empty }: { sessions: StudySession[]; empty: str
 }
 
 export function ProfileScreen() {
-  const { state } = useCampus();
+  const { state, dispatch } = useCampus();
   const router = useRouter();
   const now = useNow();
   const user = state.currentUser;
   const sections = profileSections(state, now);
+  const [demoError, setDemoError] = useState<string>();
+  const sampleAction = (kind: ContributionKind, id: string) => {
+    if (!state.people.length || hasContributionCredit(state, kind, id)) return;
+    return (
+      <Button label={kind === 'post' ? 'Simulate classmate connection' : 'Simulate classmate joining'} variant="secondary" onPress={() => {
+        const result = dispatch({ type: 'demo/contribute', kind, id });
+        setDemoError(result.ok ? undefined : result.message);
+      }} />
+    );
+  };
   return (
     <Screen title="Profile" headerRight={() => <IconButton icon="gear" label="Profile settings" onPress={() => router.push(routes.profileSettings)} />}>
-      <Row>
-        <Avatar name={user.name} initials={user.initials} size={64} />
-        <View style={{ flex: 1, gap: 2 }}>
-          <Title>{user.name}</Title>
-          <Body secondary>{user.major || 'Add your major in settings'}</Body>
-        </View>
-      </Row>
+      <ProfileHeader user={user} />
       <Row wrap>{user.courses.map(course => <Badge key={course} label={course} tone="accent" />)}</Row>
+      <ProfileCollections ownerId={user.id} />
+      <ErrorBanner message={demoError} />
       <Section title="Going" count={sections.going.length}>
         <SessionRows sessions={sections.going} empty="Join a session from the Feed to see it here." />
       </Section>
       <Section title="Hosting" count={sections.hosting.length}
         action={<Button compact variant="ghost" label="New session" accessibilityLabel="Create a study session" onPress={() => router.push(routes.create({ kind: 'session' }))} />}>
-        <SessionRows sessions={sections.hosting} empty="Sessions you create appear here." />
+        {sections.hosting.length ? sections.hosting.map(session => (
+          <Card key={session.id}>
+            <SessionRows sessions={[session]} empty="" />
+            {sampleAction('session', session.id)}
+          </Card>
+        )) : <Body secondary>Sessions you create appear here.</Body>}
       </Section>
       <Section title="Saved" count={sections.saved.length}>
         <SessionRows sessions={sections.saved} empty="Save sessions to keep an eye on them without joining." />
@@ -69,6 +85,7 @@ export function ProfileScreen() {
               <Button compact variant="ghost" label="View post" onPress={() => router.push(routes.post(post.id))} />
               <ManagePostMenu kind="request" id={post.id} />
             </Row>
+            {sampleAction('post', post.id)}
           </Card>
         )) : <Body secondary>No partner posts yet.</Body>}
       </Section>
@@ -81,9 +98,11 @@ export function ProfileScreen() {
       </Section>
       <Section title="Your teams" count={sections.teams.length}>
         {sections.teams.length ? sections.teams.map(project => (
-          <ListRow key={project.id} title={project.title}
-            subtitle={project.ownerId === user.id ? 'Owner' : 'Member'}
-            onPress={() => router.push(routes.project(project.id))} accessibilityHint="Opens project" />
+          <Card key={project.id}>
+            <ListRow title={project.title} subtitle={project.ownerId === user.id ? 'Owner' : 'Member'}
+              onPress={() => router.push(routes.project(project.id))} accessibilityHint="Opens project" />
+            {project.ownerId === user.id && sampleAction('project', project.id)}
+          </Card>
         )) : <Body secondary>You are not on a project team yet.</Body>}
       </Section>
       <ResetDemoData />
@@ -107,7 +126,7 @@ function ResetDemoData() {
 
   return (
       <Section title="Demo data">
-        <Body secondary>Reset restores the fictional sample sessions, posts, chats, projects, availability, invites and notifications on this device. Your Canvas connection, calendar and appearance are kept.</Body>
+        <Body secondary>Reset restores the fictional campus demo and removes your imported files, profile pictures and collections from this device. Your Canvas connection, calendar and appearance are kept.</Body>
         {resetCount > 0 && <Notice tone="success">Demo data reset.</Notice>}
         <ErrorBanner message={failure} />
         {confirmReset ? (
@@ -156,6 +175,10 @@ function ProfileForm() {
   const [name, setName] = useState(state.currentUser.name);
   const [major, setMajor] = useState(state.currentUser.major ?? '');
   const [courses, setCourses] = useState(state.currentUser.courses.join(', '));
+  const [bio, setBio] = useState(state.currentUser.bio ?? '');
+  const bioLength = countGraphemes(bio);
+  const { busy, error, pick } = useMediaPicker();
+  const setPicture = (field: 'avatar' | 'banner', key?: string) => dispatch({ type: 'profile/picture', field, key });
   const [fieldError, setFieldError] = useState<{ field: 'name' | 'major'; error: string } | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -163,7 +186,7 @@ function ProfileForm() {
   const save = () => {
     const checked = validateProfile(name, major);
     if (!checked.ok) { setFieldError(checked); setSaved(false); return; }
-    const result = dispatch({ type: 'profile/update', profile: { ...checked.profile, courses: courses.split(',') } });
+    const result = dispatch({ type: 'profile/update', profile: { ...checked.profile, courses: courses.split(','), bio } });
     if (!result.ok) { setFailure(result.message); setSaved(false); return; }
     setFieldError(null);
     setFailure(null);
@@ -179,9 +202,26 @@ function ProfileForm() {
         error={fieldError?.field === 'major' ? fieldError.error : undefined} />
       <TextField label="Course codes" value={courses} onChangeText={value => { setCourses(value); setSaved(false); }}
         hint="Separate course codes with commas" placeholder="MAT 240, PHY 220" autoCapitalize="characters" />
+      <TextField label="Bio (optional)" value={bio} onChangeText={value => { setBio(value); setSaved(false); }}
+        multiline hint={`${bioLength} / ${BIO_LIMIT} characters`}
+        error={bioLength > BIO_LIMIT ? 'Keep your bio to 150 characters.' : undefined} />
       <ErrorBanner message={failure} />
       {saved && <Notice tone="success">Profile saved.</Notice>}
-      <Button label="Save profile" onPress={save} />
+      <Button label="Save profile" disabled={bioLength > BIO_LIMIT} onPress={save} />
+      <Section title="Profile pictures">
+        <ProfileHeader user={state.currentUser} />
+        {(['avatar', 'banner'] as const).map(field => (
+          <Row key={field} wrap>
+            <Button label={`${state.currentUser[field] ? 'Change' : 'Add'} ${field}`} variant="secondary" disabled={busy}
+              onPress={() => void pick(true, file => setPicture(field, file.source.key))} />
+            {state.currentUser[field] && <Button label={`Remove ${field}`} variant="ghost" disabled={busy} onPress={() => {
+              const result = setPicture(field);
+              setFailure(result.ok ? null : result.message);
+            }} />}
+          </Row>
+        ))}
+        <ErrorBanner message={error} />
+      </Section>
     </Section>
   );
 }

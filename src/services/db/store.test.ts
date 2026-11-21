@@ -158,6 +158,8 @@ test('normalizes and edits dated availability, then creates one session per simu
   const final = await openCampusStore(storage, () => now);
   final.advance();
   assert.equal(final.getState().sessions.filter(item => item.id === sessionId).length, 1);
+  assert.deepEqual(final.getState().contributionCredits.filter(item => item.itemId === sessionId),
+    [{ kind: 'session', itemId: sessionId, authorId: 'you' }]);
   assert.equal(final.getState().notifications.filter(item => item.id === notice.id).length, 1);
   assert.ok(final.getState().notifications.every(item => item.read));
   now = atMinute(shared.startMinute + 1) + 1;
@@ -374,4 +376,94 @@ test('deleting an authored request preserves chat context, notifies each linked 
     .map(item => item.recipientId).sort(), ['dev', 'mira', 'you']);
   assert.equal(sortedNotifications(state).find(item => item.title === 'Post deleted · Vector practice')?.href, '/chat/mira');
   assert.equal(sortedNotifications(state).find(item => item.title === 'Post deleted · Solo post')?.body, 'Confirmed on this device.');
+});
+
+test('upgrades v1 in place and preserves campus records, references and guide stars across launches', async () => {
+  const storage = memoryStorage();
+  const clock = () => start;
+  const { collections: samples, contributionCredits: originalCredits, ...legacy } = makeCampusFixtures(clock);
+  legacy.currentUser.name = 'Existing local name';
+  legacy.savedSessionIds = ['live', 'upcoming'];
+  await storage.setItem(CAMPUS_STORAGE_KEY, JSON.stringify({ version: 1, sequence: 42, state: legacy }));
+
+  const store = await openCampusStore(storage, clock);
+  const { collections, contributionCredits, ...restored } = store.getState();
+  assert.deepEqual(restored, legacy);
+  assert.deepEqual(collections, samples);
+  assert.deepEqual(contributionCredits, originalCredits);
+
+  const cover = 'd173d9e4-c3a5-46cc-a18d-3470f3954141.png';
+  const fileKey = 'd173d9e4-c3a5-46cc-a18d-3470f3954142.pdf';
+  const banner = 'd173d9e4-c3a5-46cc-a18d-3470f3954143.jpg';
+  const collection = store.dispatch({ type: 'collection/create', name: 'Exam Notes' });
+  assert.ok(collection.ok && collection.id === 'campus-43');
+  const { id } = collection;
+  assert.equal(store.dispatch({ type: 'collection/cover', id, key: cover }).ok, true);
+  assert.equal(store.dispatch({ type: 'profile/picture', field: 'banner', key: banner }).ok, true);
+  assert.equal(store.dispatch({ type: 'profile/update', profile: { name: legacy.currentUser.name, bio: '📚' } }).ok, true);
+  const guide = store.dispatch({ type: 'guide/add', collectionId: id, guide: {
+    title: 'Practice.pdf', kind: 'pdf', source: { type: 'file', key: fileKey, bytes: 923 },
+  } });
+  assert.ok(guide.ok && guide.id === 'campus-44');
+  const sample = samples[0];
+  store.dispatch({ type: 'guide/star', collectionId: sample.id, guideId: sample.guides[0].id, starred: true });
+  await store.flush();
+  const reopened = await openCampusStore(storage, clock);
+  assert.deepEqual(reopened.getState(), JSON.parse(JSON.stringify(store.getState())));
+  assert.equal(JSON.parse((await storage.getItem(CAMPUS_STORAGE_KEY))!).version, 2);
+});
+
+test('only removes replaced and reset media after the new snapshot is committed', async () => {
+  const storage = memoryStorage();
+  let fail = false;
+  const removed: string[] = [];
+  const store = await openCampusStore({
+    ...storage,
+    async setItem(key, value) {
+      if (fail) throw new Error('Write failed');
+      await storage.setItem(key, value);
+    },
+  }, () => start, async key => { removed.push(key); });
+  const first = 'd173d9e4-c3a5-46cc-a18d-3470f3954141.png';
+  const second = 'd173d9e4-c3a5-46cc-a18d-3470f3954142.png';
+  store.dispatch({ type: 'profile/picture', field: 'avatar', key: first });
+  await store.flush();
+  fail = true;
+  store.dispatch({ type: 'profile/picture', field: 'avatar', key: second });
+  await store.flush();
+  assert.deepEqual(removed, []);
+  assert.equal((await openCampusStore(storage, () => start)).getState().currentUser.avatar, first);
+  fail = false;
+  store.advance();
+  await store.flush();
+  assert.deepEqual(removed, [first]);
+  assert.equal((await openCampusStore(storage, () => start)).getState().currentUser.avatar, second);
+  store.dispatch({ type: 'demo/reset' });
+  await store.flush();
+  assert.deepEqual(removed, [first, second]);
+  assert.equal((await openCampusStore(storage, () => start)).getState().currentUser.avatar, undefined);
+});
+
+test('combined snapshots preserve collection edits, conversation context and earned credit after a post is removed', async () => {
+  const storage = memoryStorage();
+  const store = await openCampusStore(storage, () => start);
+  assert.ok(store.dispatch({ type: 'profile/update', profile: { name: 'Avery', bio: 'Study notes', courses: [' phy 220 '] } }).ok);
+  const collection = store.dispatch({ type: 'collection/create', name: 'Physics notes' });
+  const post = store.dispatch({ type: 'post/create', draft: { title: 'Wave notes', course: 'PHY 220', description: 'Compare wave notes' } });
+  assert.ok(collection.ok && collection.id && post.ok && post.id);
+  assert.ok(store.dispatch({ type: 'demo/contribute', kind: 'post', id: post.id }).ok);
+  const thread = store.getState().threads.find(item => item.postIds.includes(post.id!))!;
+  assert.ok(store.dispatch({ type: 'chat/pin', threadId: thread.id, pinned: true }).ok);
+  assert.ok(store.dispatch({ type: 'post/delete', id: post.id }).ok);
+  await store.flush();
+
+  const state = (await openCampusStore(storage, () => start + 1)).getState();
+  assert.equal(state.currentUser.bio, 'Study notes');
+  assert.deepEqual(state.currentUser.courses, ['PHY 220']);
+  assert.ok(state.collections.some(item => item.id === collection.id));
+  const reopened = state.threads.find(item => item.id === thread.id)!;
+  assert.equal(reopened.pinned, true);
+  assert.ok(composerCourses(state, reopened).includes('PHY 220'));
+  assert.ok(state.contributionCredits.some(credit => credit.kind === 'post' && credit.itemId === post.id));
+  assert.equal(sortedNotifications(state).find(item => item.title === 'Post deleted · Wave notes')?.body, '1 connection would be notified.');
 });

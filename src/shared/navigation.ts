@@ -20,6 +20,8 @@ export const routes = {
     params: { course, date: window.date, start: String(window.startMinute), end: String(window.endMinute) } } as const),
   partnerInvite: '/partners/invite',
   notifications: '/notifications',
+  collection: (collectionId: Id) => ({ pathname: '/collection/[collectionId]', params: { collectionId } } as const),
+  guide: (collectionId: Id, guideId: Id) => ({ pathname: '/collection/[collectionId]/[guideId]', params: { collectionId, guideId } } as const),
   profileSettings: '/profile/settings',
   create: (params: CreateParams = {}) => ({ pathname: '/create', params } as const),
   session: (id: Id) => ({ pathname: '/session/[id]', params: { id } } as const),

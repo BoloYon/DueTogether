@@ -1,3 +1,5 @@
+import { hasContributionCredit, recordContributionCredits } from './contributions';
+import { BIO_LIMIT, COLLECTION_NAME_LIMIT, countGraphemes, validFileSize, validMediaKey } from './profile-media';
 
 import { makeCampusFixtures } from './mockData';
 import { findThreadByPerson, normalizeCourse, notificationForUser, otherSessionAttendees, sessionState } from './selectors';
@@ -6,7 +8,7 @@ import type { AvailabilityWindow, CampusAction, CampusResult, CampusState, Id, N
 export function transitionCampus(state: CampusState, action: CampusAction, now: number, id: Id): [CampusState, CampusResult] {
   const user = state.currentUser;
   const done = (patch: Partial<CampusState> = {}, resultId?: Id): [CampusState, CampusResult] =>
-    [{ ...state, ...patch }, resultId ? { ok: true, id: resultId } : { ok: true }];
+    [recordContributionCredits({ ...state, ...patch }), resultId ? { ok: true, id: resultId } : { ok: true }];
   const fail = (error: Extract<CampusResult, { ok: false }>['error'], message: string): [CampusState, CampusResult] =>
     [state, { ok: false, error, message }];
   const updateThread = (thread: Thread) => state.threads.map(existing => existing.id === thread.id ? thread : existing);
@@ -174,10 +176,107 @@ export function transitionCampus(state: CampusState, action: CampusAction, now: 
       return done({ memberships: [...state.memberships, { userId: user.id, projectId: project.id, status: 'requested' }] });
     }
     case 'profile/update': {
+      const { bio } = action.profile;
       const name = action.profile.name.trim();
       if (!name) return fail('invalid', 'Enter a display name.');
-      return done({ currentUser: { ...user, name, major: action.profile.major?.trim(), initials: undefined,
-        courses: action.profile.courses ? [...new Set(action.profile.courses.map(normalizeCourse).filter(Boolean))] : user.courses } });
+      if (bio !== undefined && countGraphemes(bio) > BIO_LIMIT) return fail('invalid', 'Keep your bio to 150 characters.');
+      return done({ currentUser: {
+        ...user, name, major: action.profile.major?.trim(), initials: undefined,
+        ...(bio !== undefined ? { bio } : {}),
+        courses: action.profile.courses ? [...new Set(action.profile.courses.map(normalizeCourse).filter(Boolean))] : user.courses,
+      } });
+    }
+    case 'profile/picture':
+      if (action.key && !validMediaKey(action.key)) return fail('invalid', 'Choose a valid picture.');
+      return done({ currentUser: { ...user, [action.field]: action.key } });
+    case 'collection/create':
+    case 'collection/update': {
+      const name = action.name.trim();
+      if (!name || countGraphemes(name) > COLLECTION_NAME_LIMIT) {
+        return fail('invalid', 'Enter a collection name of up to 60 characters.');
+      }
+      if (action.type === 'collection/create') {
+        return done({ collections: [...state.collections, { id, ownerId: user.id, name, guides: [] }] }, id);
+      }
+      const collection = state.collections.find(item => item.id === action.id);
+      if (!collection) return fail('missing', 'Collection unavailable.');
+      if (collection.ownerId !== user.id) return fail('forbidden', 'You can edit only your own collections.');
+      return done({ collections: state.collections.map(item => item === collection ? { ...item, name } : item) });
+    }
+    case 'collection/cover': {
+      const collection = state.collections.find(item => item.id === action.id);
+      if (!collection) return fail('missing', 'Collection unavailable.');
+      if (collection.ownerId !== user.id) return fail('forbidden', 'You can edit only your own collections.');
+      if (action.key && !validMediaKey(action.key)) return fail('invalid', 'Choose a valid cover picture.');
+      return done({ collections: state.collections.map(item => item === collection ? { ...item, cover: action.key } : item) });
+    }
+    case 'guide/add':
+    case 'guide/star': {
+      const collection = state.collections.find(item => item.id === action.collectionId);
+      if (!collection) return fail('missing', 'Collection unavailable.');
+      if (action.type === 'guide/add') {
+        if (collection.ownerId !== user.id) return fail('forbidden', 'You can add files only to your own collections.');
+        const { title, source } = action.guide;
+        if (!title.trim() || !validMediaKey(source.key) || !validFileSize(source.bytes)) {
+          return fail('invalid', 'Choose a PDF or image up to 25 MB.');
+        }
+        return done({ collections: state.collections.map(item => item === collection
+          ? { ...item, guides: [...item.guides, { ...action.guide, id, title: title.trim(), starredBy: [] }] }
+          : item) }, id);
+      }
+      const guide = collection.guides.find(item => item.id === action.guideId);
+      if (!guide) return fail('missing', 'Guide unavailable.');
+      if (collection.ownerId === user.id) return fail('forbidden', 'You can star guides from other profiles.');
+      const starredBy = guide.starredBy.filter(personId => personId !== user.id);
+      if (action.starred) starredBy.push(user.id);
+      return done({ collections: state.collections.map(item => item === collection
+        ? { ...item, guides: item.guides.map(entry => entry === guide ? { ...entry, starredBy } : entry) }
+        : item) });
+    }
+    case 'demo/contribute': {
+      if (hasContributionCredit(state, action.kind, action.id)) return [state, { ok: true }];
+      // Simulate a classmate's interaction in the same local entities used by the normal flows.
+      if (action.kind === 'session') {
+        const session = state.sessions.find(item => item.id === action.id && item.hostId === user.id);
+        if (!session) return fail('missing', 'Your session is unavailable.');
+        const person = state.people.find(item => !session.attendeeIds.includes(item.id));
+        if (session.endsAt <= now) return fail('ended', 'This session has ended.');
+        if (!person || (session.capacity !== undefined && session.attendeeIds.length >= session.capacity)) {
+          return fail('full', 'No more classmates can join this session.');
+        }
+        return done({ sessions: state.sessions.map(item => item === session
+          ? { ...item, attendeeIds: [...item.attendeeIds, person.id] }
+          : item) });
+      }
+      if (action.kind === 'project') {
+        const project = state.projects.find(item => item.id === action.id && item.ownerId === user.id);
+        if (!project) return fail('missing', 'Your project is unavailable.');
+        const memberIds = new Set([
+          ...project.teamIds,
+          ...state.memberships.filter(item => item.projectId === project.id && item.status === 'member').map(item => item.userId),
+        ]);
+        const person = state.people.find(item => !memberIds.has(item.id));
+        if (!person || memberIds.size >= project.capacity) return fail('full', 'No more classmates can join this project.');
+        return done({
+          projects: state.projects.map(item => item === project ? { ...item, teamIds: [...item.teamIds, person.id] } : item),
+          memberships: [...state.memberships.filter(item => item.projectId !== project.id || item.userId !== person.id),
+            { projectId: project.id, userId: person.id, status: 'member' }],
+        });
+      }
+      const post = state.posts.find(item => item.id === action.id && item.authorId === user.id);
+      if (!post) return fail('missing', 'Your partner post is unavailable.');
+      if (state.threads.some(thread => thread.postIds.includes(post.id))) return done();
+      const person = state.people[0];
+      if (!person) return fail('missing', 'There are no demo classmates available.');
+      const existing = findThreadByPerson(state, person.id);
+      const message = { id: id + '-intro', authorId: person.id, text: 'Hi! I saw your partner post. (Simulated)', sentAt: now, course: post.course };
+      const thread: Thread = existing
+        ? { ...existing, postIds: [...existing.postIds, post.id], messages: [...existing.messages, message] }
+        : { id, personId: person.id, postIds: [post.id], messages: [message] };
+      return done({
+        threads: existing ? updateThread(thread) : [...state.threads, thread],
+        postToThread: { ...state.postToThread, [post.id]: thread.id },
+      }, id);
     }
     case 'notification/read':
     case 'notification/readAll':
@@ -222,6 +321,6 @@ export function advanceCampus(state: CampusState, now: number): CampusState {
     return { ...invite, status: 'accepted' as const, sessionId };
   });
   return sessions.length !== state.sessions.length || threads.some((thread, index) => thread !== state.threads[index])
-    ? { ...state, threads, invites, sessions, notifications }
+    ? recordContributionCredits({ ...state, threads, invites, sessions, notifications })
     : state;
 }
