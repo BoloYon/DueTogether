@@ -88,7 +88,7 @@ export interface CampusAdapter { state: CampusState; dispatch(action: CampusActi
 
 export interface CanvasCredential { baseUrl: string; token: string }
 export interface CanvasAccount { id: Id; name: string; origin: string; accountKey: string }
-export type CanvasErrorCode = 'invalid-url' | 'auth' | 'rate-limit' | 'network' | 'timeout' | 'cancelled' | 'unsafe-url' | 'server' | 'invalid-response' | 'storage' | 'unavailable';
+export type CanvasErrorCode = 'invalid-url' | 'auth' | 'rate-limit' | 'network' | 'timeout' | 'cancelled' | 'unsafe-url' | 'server' | 'invalid-response' | 'storage' | 'unavailable' | 'not-connected' | 'busy';
 export interface CanvasError { code: CanvasErrorCode; message: string; retryAfterMs?: number }
 export type CanvasResult<T> = { ok: true; value: T } | { ok: false; error: CanvasError };
 export interface CanvasRequestOptions { signal?: AbortSignal }

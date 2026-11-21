@@ -12,8 +12,8 @@ import type { CalendarSession, CalendarStorage } from './storage';
 type View = Pick<CalendarAdapter, 'status' | 'mode' | 'account' | 'items' | 'lastSyncedAt' | 'error'>;
 
 const cancelled: CanvasError = { code: 'cancelled', message: 'Calendar operation cancelled.' };
-const unavailable: CanvasError = { code: 'unavailable', message: 'Connect Canvas before syncing coursework.' };
-const busy: CanvasError = { code: 'unavailable', message: 'Wait for the current Canvas connection attempt to finish.' };
+const unavailable: CanvasError = { code: 'not-connected', message: 'Connect Canvas before syncing coursework.' };
+const busy: CanvasError = { code: 'busy', message: 'Wait for the current Canvas connection attempt to finish.' };
 const storageError: CanvasError = { code: 'storage', message: 'Canvas data could not be saved or cleared on this device. Try again.' };
 const networkError: CanvasError = { code: 'network', message: 'Could not reach Canvas. Check your connection and try again.' };
 

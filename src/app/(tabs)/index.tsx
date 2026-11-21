@@ -1,1 +1,1 @@
-export { FeedScreen as default } from '@/shared/baselineScreens';
+export { FeedScreen as default } from '@/features/feed';

@@ -14,6 +14,8 @@ export function errorCopy(error: CanvasError): { title: string; body: string; ac
     case 'storage': return { title: 'Couldn’t save on this device', body: 'Secure storage is unavailable. Try again, or use the sample calendar.', action: 'retry' };
     case 'cancelled': return { title: 'Sync cancelled', body: 'Pull to refresh or tap Sync now to try again.', action: 'retry' };
     case 'unavailable': return { title: 'Live Canvas isn’t available in this build', body: 'You can keep using the labeled sample calendar.', action: 'none' };
+    case 'not-connected': return { title: 'Canvas isn’t connected', body: 'Connect your Canvas account in Settings to sync coursework.', action: 'settings' };
+    case 'busy': return { title: 'Still connecting to Canvas', body: 'Wait for the current connection attempt to finish, then try again.', action: 'none' };
   }
 }
 

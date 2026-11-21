@@ -1,1 +1,1 @@
-export { CalendarSettingsScreen as default } from '@/shared/baselineScreens';
+export { CalendarSettingsScreen as default } from '@/features/calendar';

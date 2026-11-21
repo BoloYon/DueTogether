@@ -3,7 +3,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { CampusProvider } from '@/services/db';
-import { MockCalendarProvider } from '@/shared/adapters';
+import { CalendarProvider } from '@/services/calendar';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -11,11 +11,11 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <CampusProvider>
-          <MockCalendarProvider>
+          <CalendarProvider>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             </Stack>
-          </MockCalendarProvider>
+          </CalendarProvider>
         </CampusProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

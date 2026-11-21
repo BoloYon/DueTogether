@@ -1,7 +1,7 @@
 
 # DueTogether HackJam baseline
 
-Approved baseline Git SHA: pending the human-approved baseline commit. After publishing, both machines should verify the exact approved object with `git rev-parse HEAD`. Use that ID when recording lane handoffs.
+Approved baseline Git SHA: `4729820` (B-lane merge, PR #1). Lanes A1 and A2 started from scaffold `581a4e9`; both were merged on top of `4729820`. Verify with `git rev-parse HEAD` and use this ID when recording lane handoffs.
 
 The specified checkout and remote were empty. Mattias approved generating a fresh Expo SDK 58 default template directly in the existing repository. npm owns the single lockfile. Expo Router owns the entry point and the coordinator owns `src/app/`. The setup contains an in-memory campus provider and a sample-only calendar provider. Replace those during integration. See BUILD_BRIEF.txt for the complete acceptance specification and lane launch prompts.
 
