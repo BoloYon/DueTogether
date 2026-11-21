@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState, useSyncExternalStore, type PropsWithChildren } from 'react';
-import { AppState, Text, View } from 'react-native';
+import { AppState, Text, View, useColorScheme } from 'react-native';
 
 import { CampusAdapterProvider } from '../../shared/adapters';
 import type { Clock } from '../../shared/types';
@@ -29,6 +29,7 @@ export function CampusProvider({ children, clock = Date.now }: PropsWithChildren
   const [store, setStore] = useState<CampusStore>();
   const opening = useRef<Promise<CampusStore> | null>(null);
   const clockRef = useRef(clock);
+  const scheme = useColorScheme();
 
   useEffect(() => {
     clockRef.current = clock;
@@ -44,9 +45,10 @@ export function CampusProvider({ children, clock = Date.now }: PropsWithChildren
   }, []);
 
   if (!store) {
+    const dark = scheme === 'dark';
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
-        <Text accessibilityRole="progressbar" style={{ color: '#18181b' }}>Loading campus data…</Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? '#000' : '#fff' }}>
+        <Text accessibilityRole="progressbar" style={{ color: dark ? '#f4f4f5' : '#18181b' }}>Loading campus data…</Text>
       </View>
     );
   }

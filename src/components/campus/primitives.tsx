@@ -283,7 +283,7 @@ export function Avatar({ name, initials, size = 40, dashed }: { name: string; in
         backgroundColor: dashed ? 'transparent' : palette.accentSoft,
         borderWidth: dashed ? 1.5 : 0, borderStyle: dashed ? 'dashed' : 'solid', borderColor: palette.accent,
       }}>
-      <Text style={{ color: palette.accent, fontWeight: '700', fontSize: size * 0.38 }}>{initialsOf(name, initials)}</Text>
+      <Text maxFontSizeMultiplier={1.2} style={{ color: palette.accent, fontWeight: '700', fontSize: size * 0.38 }}>{initialsOf(name, initials)}</Text>
     </View>
   );
 }
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   chip: { minHeight: MIN_TOUCH, borderRadius: 22, borderWidth: 1, paddingHorizontal: 14, justifyContent: 'center' },
   chipLabel: { fontSize: 15, lineHeight: 20, fontWeight: '600', textAlign: 'center' },
   segmented: { flexDirection: 'row', borderRadius: 12, padding: 3, gap: 3 },
-  segment: { flex: 1, minHeight: MIN_TOUCH - 2, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  segment: { flex: 1, minHeight: MIN_TOUCH, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
   badgeLabel: { fontSize: 13, lineHeight: 18, fontWeight: '700' },
   liveDot: { width: 7, height: 7, borderRadius: 4 },

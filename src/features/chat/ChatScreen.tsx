@@ -133,9 +133,9 @@ function Bubble({ message, mine, authorName }: { message: Message; mine: boolean
   return (
     <View accessible accessibilityLabel={`${mine ? 'You' : authorName}, ${formatClock(message.sentAt)}${message.course ? `, ${message.course}` : ''}: ${message.text}`}
       style={[styles.bubble, mine ? styles.right : styles.left, { backgroundColor: mine ? palette.bubbleOut : palette.bubbleIn }]}>
-      {message.course && <Text style={[styles.meta, { color, opacity: 0.85, fontWeight: '700' }]}>{message.course}</Text>}
+      {message.course && <Text style={[styles.meta, { color, fontWeight: '700' }]}>{message.course}</Text>}
       <Text style={{ color, fontSize: 16, lineHeight: 22 }}>{message.text}</Text>
-      <Text style={[styles.meta, { color, opacity: 0.8, textAlign: 'right' }]}>{formatClock(message.sentAt)}</Text>
+      <Text style={[styles.meta, { color, textAlign: 'right' }]}>{formatClock(message.sentAt)}</Text>
     </View>
   );
 }
